@@ -1,7 +1,0 @@
-criterum : 2, Emin = 1 GeV, Emax = 10 GeV
-bad by lower value : 
-(0)
-bad by higher value : 
-11647, 12825, 12870, 12879, 13558, 15715, 16089, 16443, (8)
-total bad 
-11647, 12825, 12870, 12879, 13558, 15715, 16089, 16443, (8)

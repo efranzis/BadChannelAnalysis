@@ -212,6 +212,10 @@ void Draw(Int_t cell[], Int_t iBC, Int_t nBC, TString period="LHC15f", TString p
 //_________________________________________________________________________
 TString Convert(TString fCalorimeter = "EMCAL", TString period = "LHC11h", TString pass = "pass1_HLT", TString trigger= "default")
 {
+	//probably redundant parameters: fCalorimeter
+	//parameters for folder sturcture: period, pass
+	//parameter very important for file name: trigger
+
 	//..Create one file for the analysis from several outputs QA files listed in runlist.txt
 	//..You need :
 	//..runlist.txt with runs listed
@@ -220,9 +224,10 @@ TString Convert(TString fCalorimeter = "EMCAL", TString period = "LHC11h", TStri
     cout<<"o o o fcalo: " << fCalorimeter << ", period: " << period << ", pass: " << pass << ",  trigger: "<<trigger<< endl;
 
     //.. Create histograms needed for...
+    TH1D *hNEventsProcessedPerRun = new TH1D("hNEventsProcessedPerRun","Number of processed events vs run number",200000,100000,300000);
+    //ELI a little problematic to hard code properties of histograms??
     TH2F *hCellAmplitude          = new TH2F("hCellAmplitude","Cell Amplitude",200,0,10,23040,0,23040);
     TH2F *hCellTime               = new TH2F("hCellTime","Cell Time",250,-275,975,23040,0,23040);
-    TH1D *hNEventsProcessedPerRun = new TH1D("hNEventsProcessedPerRun","Number of processed events vs run number",200000,100000,300000);
 
     //..Open the text file with the run list numbers and run index
     TString file = Form("/scratch/alicehp2/germain/QANew2/%s%sBC0.txt",period.Data(),pass.Data());
