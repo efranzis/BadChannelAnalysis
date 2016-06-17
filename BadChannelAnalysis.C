@@ -1008,9 +1008,9 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 		//..Criterium 1,2 or 7
 		TFile::Open(file);
 
-		PeriodAnalysis(2, 6., 0.5, 2.,1,period,pass,trial); // nb ent emin emax
+		PeriodAnalysis(2, 6.,0.5, 2.,1,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(1, 6., 0.5, 2.,1,period,pass,trial); // energy mea emin emax
+		PeriodAnalysis(1, 6.,0.5, 2.,1,period,pass,trial); // energy mea emin emax
 		TFile::Open("filter.root");
 		PeriodAnalysis(2, 6., 2., 5.,1,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
