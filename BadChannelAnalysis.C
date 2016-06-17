@@ -210,9 +210,8 @@ void Draw(Int_t cell[], Int_t iBC, Int_t nBC, TString period="LHC15f", TString p
 
 //_________________________________________________________________________
 //_________________________________________________________________________
-TString Convert(TString fCalorimeter = "EMCAL", TString period = "LHC11h", TString pass = "pass1_HLT", TString trigger= "default")
+TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString trigger= "default")
 {
-	//probably redundant parameters: fCalorimeter
 	//parameters for folder sturcture: period, pass
 	//parameter very important for file name: trigger
 
@@ -221,7 +220,7 @@ TString Convert(TString fCalorimeter = "EMCAL", TString period = "LHC11h", TStri
 	//..runlist.txt with runs listed
 	//..outputsQA  e.g  period/pass/123456.root
     cout<<"o o o Start conversion process o o o"<<endl;
-    cout<<"o o o fcalo: " << fCalorimeter << ", period: " << period << ", pass: " << pass << ",  trigger: "<<trigger<< endl;
+    cout<<"o o o period: " << period << ", pass: " << pass << ",  trigger: "<<trigger<< endl;
 
     //.. Create histograms needed for...
     TH1D *hNEventsProcessedPerRun = new TH1D("hNEventsProcessedPerRun","Number of processed events vs run number",200000,100000,300000);
@@ -231,9 +230,11 @@ TString Convert(TString fCalorimeter = "EMCAL", TString period = "LHC11h", TStri
 
     //..Open the text file with the run list numbers and run index
     TString file = Form("/scratch/alicehp2/germain/QANew2/%s%sBC0.txt",period.Data(),pass.Data());
-    /*ELI*/file = "AnalysisInput/runList.txt";
+    ///*ELI*/file = "AnalysisInput/runList.txt";
+    /*ELI*/file = Form("AnalysisInput/%s/%s/runList.txt",period.Data(),pass.Data());
     cout<<"o o o Open .txt file with run indices. Name = " << file << endl;
     FILE *pFile = fopen(file.Data(), "r");
+    if(!pFile)cout<<"count't open file!"<<endl;
     Int_t Nentr;
     Int_t q;
     Int_t ncols;
@@ -251,9 +252,7 @@ TString Convert(TString fCalorimeter = "EMCAL", TString period = "LHC11h", TStri
 
 	//..Open the different .root files with help of the run numbers from the text file
 	const Int_t nRun = nlines ;
-	TString base ;
-	TString base2 = Form("/scratch/alicehp2/germain/QANew2/%s/%s/",period.Data(),pass.Data());
-	//ELI TString BCfile= Form("%s%s%sRunlist0New.root",base2.Data(),period.Data(),pass.Data());
+	TString base;
 	TString BCfile= Form("ConvertOutput/%s%sRunlist0New.root",period.Data(),pass.Data());
 
 	TString direct(Form("CaloQA_%s",trigger.Data()));
@@ -263,8 +262,7 @@ TString Convert(TString fCalorimeter = "EMCAL", TString period = "LHC11h", TStri
 	//..loop over the amount of run numbers found in the previous text file.
 	for(Int_t i = 0 ; i < nRun ; i++)
 	{
-		//ELI base  = Form("/scratch/alicehp2/germain/QANew2/%s/%s/%d",period.Data(),pass.Data(),RunId[i]);
-		base  = Form("AnalysisInput/%d",RunId[i]);
+		base  = Form("AnalysisInput/%s/%s/%d",period.Data(),pass.Data(),RunId[i]);
 
 		// ICI on met le nom period/pass/runblabla.root
 		if ((pass=="cpass1_pass2")||(pass=="cpass1-2"))
@@ -785,7 +783,8 @@ void KillCells(Int_t filter[], Int_t nbc)
 //_________________________________________________________________________
 //_________________________________________________________________________
 
-void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, Int_t compteur = 1, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString file ="none"){
+void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, Int_t compteur = 1, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString Infilefile ="none")
+{
 
 	// what it does in function of criterum value
 
@@ -797,22 +796,27 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	// 6 :
 	// 7 : give bad + dead list
 
-	Int_t newBC[23040]; // newBC[0] donne l'id de la premiere BC trouvée
-	Int_t *pexclu[23040] ;
+	Int_t newBC[23040];       // newBC[0] donne l'id de la premiere BC trouvée
+	Int_t *pexclu[23040];
 	Int_t exclu[23040];
-	Int_t *pflag[23040][7] ;
+	Int_t *pflag[23040][7];
 	Int_t flag[23040][7];
-	Int_t bad[10000] ;
-	Int_t i, j, nb=0;
+	Int_t bad[10000];
+	Int_t i, nb=0;
 
 	//INIT
 	TString output, bilan;
-	//bilan = Form("%s%sBC0Test%s.txt",period.Data());
-	if(criterum == 7) bilan = Form("%s%sBC0Test%i.txt",period.Data(),pass.Data(),trial); ;
-	// if(criterum == 7) bilan = "ResultsLHC15oBCRunList0Test1.txt" ;
 	output.Form("Criterum-%d_Emin-%.2f_Emax-%.2f.txt",criterum,Emin,Emax);
-	for(i=0;i<23040;i++) { exclu[i]=0; pexclu[i] =&exclu[i];
-	for(j=0;j<7;j++) { flag[i][j] =1 ; pflag[i][j] = &flag[i][j];}}
+	for(i=0;i<23040;i++)  //what is this number 23040??
+	{
+		exclu[i] =0;
+		pexclu[i]=&exclu[i];
+		for(Int_t j=0;j<7;j++)
+		{
+			flag[i][j] =1;
+			pflag[i][j]=&flag[i][j];
+		}
+	}
 	flag[0][0]=criterum ; //to identify the criterum tested
 
 
@@ -822,133 +826,168 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	//   cout<<"Excluded/dead cells : "<<endl;
 	//   for(i=0;i<23040;i++) {if(exclu[i]!=0) {cout<<i<<", " ; nb++;}}
 	//   cout<<"("<<nb<<")"<<endl; nb=0;}
+	   //..This is the final part
+		//CRITERUM 7 : FINAL RESULT
+		if(criterum ==7)
+		{
+			bilan = Form("%s%sBC0Test%i.txt",period.Data(),pass.Data(),trial); ;
+			cout<<"FINAL RESULTS"<<endl;
+			ofstream file(bilan, ios::out | ios::trunc);
+			if(file)
+			{
+				file<<"Dead cells : "<<endl;
+				cout<<"Dead cells : "<<endl;
+				// MG modif
+				//for(i=0;i<23040;i++) {
+				for(i=0;i<17665;i++)
+				{
+					//if(exclu[i]!=0) {file<<i<<", " ; cout<<i<<", " ; nb++;}}
+					if(exclu[i]!=0)
+					{
+						file<<i<<"\n" ; cout<<i<<", " ; nb++;
+					}
+				}
+				// file<<i<<"\n" ; cout<<i<<", " ; nb++;}
+				file<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl; nb=0;
 
+				TFile::Open("filter.root");
+				ExcludeCells(pexclu);
+				file<<"Bad cells : "<<endl; cout<<"Bad cells : "<<endl;
+				for(i=0;i<17665;i++)
+				{
+					//	if(exclu[i]!=0) {bad[nb]=i; file<<i<<", " ; cout<<i<<", " ;
+					if(exclu[i]!=0)
+					{
+						bad[nb]=i; file<<i<<"\n" ; cout<<i<<", " ;
+						nb++;
+						//if(nb==999){ cout<<"TO MUCH BAD CELLS"<<endl ; break;}
+					}
+				}
+				file<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl;
+			}
+			file.close();
 
-	//CRITERUM 7 : FINAL RESULT
-	if(criterum ==7) {
-		cout<<"FINAL RESULTS"<<endl;
-		ofstream fichier(bilan, ios::out | ios::trunc);
-		if(fichier){
-			fichier<<"Dead cells : "<<endl;
-			cout<<"Dead cells : "<<endl;
-			// MG modif
-			//for(i=0;i<23040;i++) {
-			for(i=0;i<17665;i++) {
-				//if(exclu[i]!=0) {fichier<<i<<", " ; cout<<i<<", " ; nb++;}}
-				if(exclu[i]!=0) {fichier<<i<<"\n" ; cout<<i<<", " ; nb++;}}
-			// fichier<<i<<"\n" ; cout<<i<<", " ; nb++;}
-			fichier<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl; nb=0;
-
-			TFile::Open("filter.root");
-			ExcludeCells(pexclu);
-			fichier<<"Bad cells : "<<endl; cout<<"Bad cells : "<<endl;
-			for(i=0;i<17665;i++) {
-				//	if(exclu[i]!=0) {bad[nb]=i; fichier<<i<<", " ; cout<<i<<", " ;
-				if(exclu[i]!=0) {bad[nb]=i; fichier<<i<<"\n" ; cout<<i<<", " ;
-				nb++;
-				//if(nb==999){ cout<<"TO MUCH BAD CELLS"<<endl ; break;}
+			if(Infilefile!="none")
+			//if(Infilefile)
+			{
+				TFile::Open(Infilefile);
+				Int_t w=0 ;
+				Int_t c;
+				for(w=0; (w*9)<=nb; w++)
+				{
+					if(9<=(nb-w*9)) c = 9 ;
+					else c = nb-9*w ;
+					Draw(bad, w*9, c,period,pass,trial) ;
 				}
 			}
-			fichier<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl;}
-		fichier.close();
-
-		if(file!="none"){
-			TFile::Open(file);
-			Int_t w=0 ;
-			Int_t c;
-			for(w=0; (w*9)<=nb; w++) {
-				if(9<=(nb-w*9)) c = 9 ;
-				else c = nb-9*w ;
-				Draw(bad, w*9, c,period,pass,trial) ;
-			}}
-
-		nb=0;
-	}
+			nb=0;
+		}
 
 
 	//ANALYSIS
-	if (criterum < 3)  TestCellEandN(pflag, Emin, Emax,Nsigma,compteur);
-	else if (criterum < 6)
-		TestCellShapes(pflag, Emin, Emax, Nsigma,compteur);
+	if (criterum < 3)      TestCellEandN(pflag, Emin, Emax,Nsigma,compteur);
+	else if (criterum < 6) TestCellShapes(pflag, Emin, Emax, Nsigma,compteur);
 
 
 	//RESULTS
-	if(criterum < 6) { nb=0;
-	cout<<"bad by lower value  Emin : "<< Emin << "  Emax = " << Emax << endl;
-	for(i=0;i<17665;i++) {
-		if(flag[i][criterum]==0 && exclu[i]==0){nb++;
-		cout<<i<<", " ;}} cout<<"("<<nb<<")"<<endl; nb=0;
-
-		cout<<"bad by higher value  Emin : "<< Emin << "  Emax = " << Emax  <<endl;
-		for(i=0;i<17665;i++) {
-			if(flag[i][criterum]==2 && exclu[i]==0) {nb++;
-			cout<<i<<", " ;}} cout<<"("<<nb<<")"<<endl; nb=0;
-
-			cout<<"total bad "<<endl;
-			for(i=0;i<17665;i++) {
-				if(flag[i][criterum]!=1 && exclu[i]==0) {
-					newBC[nb]=i;
-					nb++;
-					cout<<i<<", " ; }} cout<<"("<<nb<<")"<<endl;
-
-
-					//create a filtered file
-					KillCells(newBC,nb) ; nb=0;
-
-					//write in a file the results
-					ofstream fichier(output, ios::out | ios::trunc);
-					if(fichier)
+	if(criterum < 6)
+	{
+		nb=0;
+		cout<<"bad by lower value  Emin : "<< Emin << "  Emax = " << Emax << endl;
+		for(i=0;i<17665;i++)
+		{
+			if(flag[i][criterum]==0 && exclu[i]==0)
+			{
+				nb++;
+				cout<<i<<", " ;}} cout<<"("<<nb<<")"<<endl; nb=0;
+				cout<<"bad by higher value  Emin : "<< Emin << "  Emax = " << Emax  <<endl;
+				for(i=0;i<17665;i++)
+				{
+					if(flag[i][criterum]==2 && exclu[i]==0)
 					{
-						fichier <<"criterum : "<<criterum<<", Emin = "<<Emin<<" GeV"<<", Emax = "<<Emax<<" GeV"<<endl;
-						fichier<<"bad by lower value : "<<endl;
-						for(i=0;i<17665;i++) {
-							if(flag[i][criterum]==0 && exclu[i]==0){nb++;
-							fichier<<i<<", " ;}} fichier<<"("<<nb<<")"<<endl; nb=0;
-
-							fichier<<"bad by higher value : "<<endl;
-							for(i=0;i<17665;i++) {
-								if(flag[i][criterum]==2 && exclu[i]==0) {nb++;
-								fichier<<i<<", " ;}} fichier<<"("<<nb<<")"<<endl; nb=0;
-								fichier<<"total bad "<<endl;
-								for(i=0;i<17665;i++) {
-									if(flag[i][criterum]!=1 && exclu[i]==0) {
-										newBC[nb]=i;
-										nb++;
-										fichier<<i<<", " ; }} fichier<<"("<<nb<<")"<<endl;
-										fichier.close();
+						nb++;
+						cout<<i<<", " ;
 					}
-					else
-						cerr << "opening error" << endl;
+				}
+				cout<<"("<<nb<<")"<<endl; nb=0;
 
+				cout<<"total bad "<<endl;
+				for(i=0;i<17665;i++)
+				{
+					if(flag[i][criterum]!=1 && exclu[i]==0)
+					{
+						newBC[nb]=i;
+						nb++;
+						cout<<i<<", " ;
+					}
+				}
+				cout<<"("<<nb<<")"<<endl;
+
+				//create a filtered file
+				KillCells(newBC,nb) ; nb=0;
+
+				//write in a file the results
+				ofstream file(output, ios::out | ios::trunc);
+				if(file)
+				{
+					file <<"criterum : "<<criterum<<", Emin = "<<Emin<<" GeV"<<", Emax = "<<Emax<<" GeV"<<endl;
+					file<<"bad by lower value : "<<endl;
+					for(i=0;i<17665;i++)
+					{
+						if(flag[i][criterum]==0 && exclu[i]==0)
+						{
+							nb++;
+							file<<i<<", " ;
+						}
+					}
+					file<<"("<<nb<<")"<<endl; nb=0;
+					file<<"bad by higher value : "<<endl;
+					for(i=0;i<17665;i++)
+					{
+						if(flag[i][criterum]==2 && exclu[i]==0)
+						{
+							nb++;
+							file<<i<<", " ;
+						}
+					}
+					file<<"("<<nb<<")"<<endl; nb=0;
+					file<<"total bad "<<endl;
+					for(i=0;i<17665;i++)
+					{
+						if(flag[i][criterum]!=1 && exclu[i]==0)
+						{
+							newBC[nb]=i;
+							nb++;
+							file<<i<<", " ;
+						}
+					}
+					file<<"("<<nb<<")"<<endl;
+					file.close();
+				}
+				else  cerr << "opening error" << endl;
 	}
 
+
+
 }
-
-
 //_________________________________________________________________________
 //_________________________________________________________________________
 
 void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC15f", TString pass = "pass2",Int_t trial = 0){
 
-	//Configure a complete analysis with different criteria, it provides bad+dead cells lists
-	//You can manage criteria used and their order, the first criteria will use the original output file from AliAnalysisTaskCaloCellsQA task, then after each criteria it will use a filtered file without the badchannel previously identified
-
-
+	//..Configure a complete analysis with different criteria, it provides bad+dead cells lists
+	//..You can manage criteria used and their order, the first criteria will use the original
+	//..output file from AliAnalysisTaskCaloCellsQA task, then after each criteria it will use a
+	//..filtered file without the badchannel previously identified
+    cout<<"o o o Bad channel analysis o o o"<<endl;
 
 	Int_t criter;
 	Double_t  Emini, Emaxi, Nsig;
-
-
-
-
-	// Default Configuration:
-
-	//if(trigger=="default"){
-	if(trigger=="default"||trigger=="INT7"||trigger=="DMC7"||trigger=="AnyINTnoBC"){
-
-
+    //..Default Configuration:
+	if(trigger=="default"||trigger=="INT7"||trigger=="DMC7"||trigger=="AnyINTnoBC")
+	{
 		TFile::Open(file);
-		PeriodAnalysis(2, 4., 0.2, 0.5,1,period,pass,trial); // nb ent emin emax
+		PeriodAnalysis(2, 4., 0.2,0.5,1,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
 		PeriodAnalysis(2, 4., 0.5, 1.,1,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
@@ -958,19 +997,17 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 		TFile::Open("filter.root");
 		PeriodAnalysis(1, 6., 1., 2.,1,period,pass,trial); // energy mea emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(2, 4., 1., 10.,1, period,pass,trial); //nb ent emin emax
+		PeriodAnalysis(2, 4., 1.,10.,1,period,pass,trial); //nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(1, 6., 1., 10.,1,period,pass,trial); //energy mea emin emax
-
-		//     TFile::Open("filter.root");
-		//     PeriodAnalysis(4, 4., 0.1, 2.,1,period,pass,trial);  // param A fit E = A exp(-Bx)/x^2
-
+		PeriodAnalysis(1, 6., 1.,10.,1,period,pass,trial); //energy mea emin emax
 	}
-
-
-	else { //you have the possibility to change analysis configuration  in function of trigger type
-
+	else
+	{
+		//..you have the possibility to change analysis configuration  in function of trigger type
+		//..PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, Int_t compteur = 1, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString Infilefile ="none"){
+		//..Criterium 1,2 or 7
 		TFile::Open(file);
+
 		PeriodAnalysis(2, 6., 0.5, 2.,1,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
 		PeriodAnalysis(1, 6., 0.5, 2.,1,period,pass,trial); // energy mea emin emax
@@ -979,26 +1016,20 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 		TFile::Open("filter.root");
 		PeriodAnalysis(1, 6., 2., 5.,1,period,pass,trial); // energy mea emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(2, 6., 5., 10.,1,period,pass,trial); // nb ent emin emax
+		PeriodAnalysis(2, 6., 5.,10.,1,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(1, 6., 5., 10.,1,period,pass,trial); // energy mea emin emax
-
-		// this was old settings for EMC riggers checks
-		//     TFile::Open(file);
-		// //    PeriodAnalysis(3, 8., 1., 3.,1,period,pass,trial);
-
-
+		PeriodAnalysis(1, 6., 5.,10.,1,period,pass,trial); // energy mea emin emax
 	}
-
+	//provide dead cells list from original file and draw bad cells candidate from indicated file
 	TFile::Open(file);
-	PeriodAnalysis(7,0.,0.,0.,1,period,pass,trial,file); //provide dead cells list from original file and draw bad cells candidate from indicated file
+	PeriodAnalysis(7,0.,0.,0.,1,period,pass,trial,file);
 
+	cout<<"o o o End of bad channel analysis o o o"<<endl;
 }
-
 //_________________________________________________________________________
 //________________________________________________________________________
 
-void BadChannelAnalysis(TString fCalorimeter = "EMCAL", TString period = "LHC15f", TString pass = "pass2", TString trigger= "default",Int_t trial=0, TString baseLocalPath = "./")
+void BadChannelAnalysis(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default",Int_t trial=0, TString baseLocalPath = "./")
 {
 	//BadChannelAnalysis("EMCAL","LHC15o","muon_calo_pass1","AnyINTnoBC"/"default")???  //possibility for trigger: AnyINT, AnyINTnoBC, EMCnoBC
 
@@ -1011,7 +1042,7 @@ void BadChannelAnalysis(TString fCalorimeter = "EMCAL", TString period = "LHC15f
 	cout<<". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."<<endl;
 	cout<<". . .Start process by converting files. . . . . . . . . . . ."<<endl;
 	cout<<endl;
-	inputfile = Convert(fCalorimeter, period, pass, trigger);
+	inputfile = Convert(period, pass, trigger);
 	cout<<endl;
 	cout<<". . .Load inputfile with name: "<<inputfile<<" . . . . . . . ."<<endl;
 	cout<<". . .Continue process by . . . . . . . . . . . ."<<endl;
