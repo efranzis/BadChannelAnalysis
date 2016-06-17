@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo ===========================
-BASE="./"
+BASE="./AnalysisInput/"
 #"/data/Work/EMCAL/BadChannels/"
 YEAR=2016
 PERIOD="LHC16h"

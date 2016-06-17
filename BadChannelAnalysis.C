@@ -230,7 +230,7 @@ TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString t
 
     //..Open the text file with the run list numbers and run index
     TString file = Form("/scratch/alicehp2/germain/QANew2/%s%sBC0.txt",period.Data(),pass.Data());
-    ///*ELI*/file = "AnalysisInput/runList.txt";
+    ///*ELI*/file = "AnalysisInput/runList.txt";//runListSmall.txt
     /*ELI*/file = Form("AnalysisInput/%s/%s/runList.txt",period.Data(),pass.Data());
     cout<<"o o o Open .txt file with run indices. Name = " << file << endl;
     FILE *pFile = fopen(file.Data(), "r");
@@ -830,7 +830,7 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 		//CRITERUM 7 : FINAL RESULT
 		if(criterum ==7)
 		{
-			bilan = Form("%s%sBC0Test%i.txt",period.Data(),pass.Data(),trial); ;
+			bilan = Form("/BadChannelOutput/%s%sBC0Test%i.txt",period.Data(),pass.Data(),trial); ;
 			cout<<"FINAL RESULTS"<<endl;
 			ofstream file(bilan, ios::out | ios::trunc);
 			if(file)
@@ -885,7 +885,9 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 
 
 	//ANALYSIS
+	//..For case 1 or 2
 	if (criterum < 3)      TestCellEandN(pflag, Emin, Emax,Nsigma,compteur);
+	//..For case 3, 4 or 5
 	else if (criterum < 6) TestCellShapes(pflag, Emin, Emax, Nsigma,compteur);
 
 
