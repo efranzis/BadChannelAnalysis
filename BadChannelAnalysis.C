@@ -230,8 +230,7 @@ TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString t
 
     //..Open the text file with the run list numbers and run index
     TString file = Form("/scratch/alicehp2/germain/QANew2/%s%sBC0.txt",period.Data(),pass.Data());
-    ///*ELI*/file = "AnalysisInput/runList.txt";//runListSmall.txt
-    /*ELI*/file = Form("AnalysisInput/%s/%s/runList.txt",period.Data(),pass.Data());
+    /*ELI*/file = Form("AnalysisInput/%s/%s/runListSmall.txt",period.Data(),pass.Data());
     cout<<"o o o Open .txt file with run indices. Name = " << file << endl;
     FILE *pFile = fopen(file.Data(), "r");
     if(!pFile)cout<<"count't open file!"<<endl;
@@ -366,38 +365,48 @@ TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString t
 //_________________________________________________________________________
 //_________________________________________________________________________
 
-void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t dnbins = 200, Double_t dmaxval = -1., Int_t compteur = 1)
+void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t dnbins = 200, Double_t dmaxval = -1.)
 {  
 	//  1) create a distribution for the input histogram;
 	//  2) fit the distribution with a gaussian
 	//  3) define good area within +-Nsigma to identfy badcells
 	//
 	// inhisto -- input histogram;
-	// dnbins -- number of bins in distribution;
+	// dnbins  -- number of bins in distribution;
 	// dmaxval -- maximum value on distribution histogram.
 
 	gStyle->SetOptStat(1); // MG modif
-	gStyle->SetOptFit(1); // MG modif
+	gStyle->SetOptFit(1);  // MG modif
 	Int_t crit = *pflag[0][0] ; //identify the criterum processed
+	if(crit==1)cout<<"    o Fit average energy per hit distribution"<<endl;
+	if(crit==2)cout<<"    o Fit average hit per event distribution"<<endl;
+
+	TString HistoName=inhisto->GetName();
 	Double_t goodmax= 0. ;
 	Double_t goodmin= 0. ;
-	*pflag[0][0] =1;
+	*pflag[0][0] =1; //ELI why is this done??
 	if (dmaxval < 0.)
 	{
 		dmaxval = inhisto->GetMaximum()*1.01;  // 1.01 - to see the last bin
 		if(crit==2 && dmaxval > 1) dmaxval =1. ;
 	}
 
-	TH1 *distrib = new TH1F(Form("%sDistr",inhisto->GetName()), "", dnbins, inhisto->GetMinimum(), dmaxval);
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//. . .build the distribution of average values
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//TH1 *distrib = new TH1F(Form("%sDistr",(char*)HistoName), "", dnbins, inhisto->GetMinimum(), dmaxval);
+	TH1 *distrib = new TH1F(Form("%sDistr",(const char*)HistoName), "", dnbins, inhisto->GetMinimum(), dmaxval);
 	distrib->SetXTitle(inhisto->GetYaxis()->GetTitle());
 	distrib->SetYTitle("Entries");
-
-	// fill distribution
+	//..fill the distribution of avarge cell values
 	for (Int_t c = 1; c <= inhisto->GetNbinsX(); c++)
+	{
 		distrib->Fill(inhisto->GetBinContent(c));
-
-	// draw histogram + distribution
-	TCanvas *c1 = new TCanvas(inhisto->GetName(),inhisto->GetName(), 800,400);
+	}
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//. . .draw histogram + distribution
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	TCanvas *c1 = new TCanvas(HistoName,HistoName, 800,400);
 	c1->Divide(2,1);
 
 	c1->cd(1);
@@ -413,6 +422,9 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	gPad->SetLogy();
 	distrib->Draw();
 
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//. . .fit histogram
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	Int_t higherbin=0,i;
 	for (i = 2; i <= distrib->GetNbinsX(); i++)
 	{
@@ -428,38 +440,30 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 		if(distrib->GetBinContent(i)<2) break ;
 	goodmin = distrib->GetBinLowEdge(i);
 
-	TF1 *fit2 = new TF1("fit2", "gaus");
 
+	TF1 *fit2 = new TF1("fit2", "gaus");
 	distrib->Fit(fit2, "0LQEM", "", goodmin, goodmax);
 	Double_t sig, mean, chi2ndf;
 	// Marie midif to take into account very non gaussian distrig
-	mean = fit2->GetParameter(1);
-	sig = fit2->GetParameter(2);
+	mean    = fit2->GetParameter(1);
+	sig     = fit2->GetParameter(2);
 	chi2ndf = fit2->GetChisquare()/fit2->GetNDF();
 
-
-	//   mean = distrib->GetMean(); // MG
-	//   sig = distrib->GetRMS(); // MG
-
-	// cout << "----------------------------------------------"<< endl;
-	//   cout <<" pass " << compteur <<  " mean " << mean << " rms" << sig << endl;
-	//   cout << "----------------------------------------------"<< endl;
-	if (mean <0.) mean=0.;
+	if (mean <0.) mean=0.; //ELI is this not a highly problematic case??
 
 	goodmin = mean - Nsigma*sig ;
 	goodmax = mean + Nsigma*sig ;
 
 	if (goodmin<0) goodmin=0.;
-	//    if (compteur==0){
-	//       goodmin = 0.;
-	//       goodmax = 2.*mean;
-	//     }
 
-	cout << "-----------------------------------------------------------------"<< endl;
-	cout  << " pass " << compteur <<  " mean " << mean << " rms" << sig << " goodmin " << goodmin<< " goodmax" << goodmax <<  endl;
-	cout << "-----------------------------------------------------------------"<< endl;
+	cout<<"    o Result of fit: "<<endl;
+	cout<<"    o  "<<endl;
+	cout<<"    o Mean: "<<mean <<" sigma: "<<sig<<endl;
+	cout<<"    o good range : "<<goodmin <<" - "<<goodmax<<endl;
 
-	// lines
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//. . .Add info to histogram
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	TLine *lline = new TLine(goodmin, 0, goodmin, distrib->GetMaximum());
 	lline->SetLineColor(kOrange);
 	lline->SetLineStyle(7);
@@ -470,130 +474,105 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	rline->SetLineStyle(7);
 	rline->Draw();
 
-	// legend
 	TLegend *leg = new TLegend(0.60,0.82,0.9,0.88);
 	leg->AddEntry(lline, "Good region boundary","l");
 	leg->Draw("same");
-	//  fit2->Draw("same");
+	//fit2->Draw("same");
 
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//. . .Save histogram
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	c1->Update();
-	TString name = "criteria-" ;
-	name+= crit;
-	name+= ".gif";
-
+	TString name   =Form("BadChannelOutput/criteria-_%d.gif",crit);
+	if(crit==1)name=Form("BadChannelOutput/AverageEperHit_%s.gif",(const char*)HistoName);
+	if(crit==2)name=Form("BadChannelOutput/AverageHitperEvent_%s.gif",(const char*)HistoName);
 	c1->SaveAs(name);
 
-	Int_t ntot = 0, cel;
 
-	for (Int_t c = 1; c <= inhisto->GetNbinsX(); c++)
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//. . .Mark the bad cells in the pflag array
+	//. . .(0= bad because lower than min allowed)
+	//. . .(2= bad because higher than max allowed)
+	//. . .(1 by default)
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	cout<<"    o Flag bad cells that are outside the good range "<<endl;
+	Int_t cel;
+	//..*pflag[1][0] stores the number of cells
+	for(Int_t c = 1; c <= *pflag[1][0]; c++)
 	{
-		cel=(Int_t)(inhisto->GetBinLowEdge(c)+0.1);
+		cel=(Int_t)(inhisto->GetBinLowEdge(c)+0.1);  //ELI what does that 0.1 stand for?
 		if (inhisto->GetBinContent(c) <= goodmin)
 		{
-			ntot++;
 			*pflag[cel][crit]=0;
 		}
 		else if (inhisto->GetBinContent(c) > goodmax)
 		{
-			ntot++;
 			*pflag[cel][crit]=2;
 		}
 	}
+	cout<<"    o "<<endl;
+
 }
-
 //_________________________________________________________________________
 //_________________________________________________________________________
 
-void TestCellEandN(Int_t *pflag[23040][7], Double_t Emin = 0.1, Double_t Emax=2., Double_t Nsigma = 4.,  Int_t compteur = 1, char* hname = "hCellAmplitude", Int_t dnbins = 200)
+void TestCellEandN(Int_t *pflag[23040][7], Double_t Emin = 0.1, Double_t Emax=2., Double_t Nsigma = 4.)
 {
-
-
-	// Three more tests for bad  cells:
-	//  1) total deposited energy;
-	//  2) total number of entries;
-	//  3) average energy = [total deposited energy]/[total number of entries].
-	//
-
-	//  Int_t count;
-	//   count = compteur;
-
-	// input; X axis -- absId numbers
-
-	TH2 *hCellAmplitude = (TH2*) gFile->Get(hname);
+	//..here the average hit per event and the average energy per hit is caluclated for each cell.
+	Int_t dnbins = 200;
+	TH2 *hCellAmplitude = (TH2*) gFile->Get("hCellAmplitude");
 
 	// binning parameters
-	Int_t ncells = hCellAmplitude->GetNbinsY();
+	Int_t ncells  = hCellAmplitude->GetNbinsY();
 	Double_t amin = hCellAmplitude->GetYaxis()->GetXmin();
 	Double_t amax = hCellAmplitude->GetYaxis()->GetXmax();
+	cout<<"    o Calculate average cell hit per event and average cell energy per hit "<<endl;
 
-	cout << "ncells " << ncells << " amin = " << amin << "amax = " << amax<< endl;
-
-
-	TH1* hCellEtotal = new TH1F(Form("%s_hCellEtotal_E%.2f",hname,Emin),
-			Form("Total deposited energy, E > %.2f GeV",Emin), ncells,amin,amax);
-	hCellEtotal->SetXTitle("AbsId");
-	hCellEtotal->SetYTitle("Energy, GeV");
-
-	TH1F *hCellNtotal = new TH1F(Form("%s_hCellNtotal_E%.2f",hname,Emin),
-			Form("Number of entries per events, E > %.2f GeV",Emin), ncells,amin,amax);
+	TH1F *hCellNtotal = new TH1F(Form("hCellNtotal_E%.2f-%.2f",Emin,Emax),Form("Number of hits per events, %.2f < E < %.2f GeV",Emin,Emax), ncells,amin,amax);
 	hCellNtotal->SetXTitle("AbsId");
-	hCellNtotal->SetYTitle("Entries");
+	hCellNtotal->SetYTitle("Av. hits per events");
 
-	TH1F *hCellEtoNtotal = new TH1F(Form("%s_hCellEtoNtotal_E%.2f",hname,Emin),
-			Form("Average energy per hit, E > %.2f GeV",Emin), ncells,amin,amax);
+	TH1F *hCellEtoNtotal = new TH1F(Form("hCellEtoNtotal_E%.2f-%.2f",Emin,Emax),Form("Average energy per hit,%.2f < E < %.2f GeV",Emin,Emax), ncells,amin,amax);
 	hCellEtoNtotal->SetXTitle("AbsId");
-	hCellEtoNtotal->SetYTitle("Energy, GeV");
+	hCellEtoNtotal->SetYTitle("Av. energy per hit, GeV");
 
 	TH1* hNEventsProcessedPerRun = (TH1*) gFile->Get("hNEventsProcessedPerRun");
 	Double_t totalevents = hNEventsProcessedPerRun->Integral(1, hNEventsProcessedPerRun->GetNbinsX());
 
-	// fill cells
+	//..here the average hit per event and the average energy per hit is caluclated for each cell.
 	for (Int_t c = 1; c <= ncells; c++)
 	{
 		Double_t Esum = 0;
 		Double_t Nsum = 0;
 
-
 		for (Int_t j = 1; j <= hCellAmplitude->GetNbinsX(); j++)
 		{
-			//   for (Int_t j =  hCellAmplitude->GetXaxis()->FindBin(Emin); j <= hCellAmplitude->GetXaxis()->FindBin(Emax); j++) {
 			Double_t E = hCellAmplitude->GetXaxis()->GetBinCenter(j);
 			Double_t N = hCellAmplitude->GetBinContent(j, c);
-			if (E < Emin || E>Emax) continue;
-			// if (E > Emin && E< Emax) {
+			if (E < Emin || E > Emax) continue;
 			Esum += E*N;
 			Nsum += N;
-			//}
 		}
-
-		hCellEtotal->SetBinContent(c, Esum);
-		hCellNtotal->SetBinContent(c, Nsum/totalevents);
-		//  hCellNtotal->SetBinContent(c, Nsum);
-
-		if (Nsum > 0.)  // number of entries >= 1
-			hCellEtoNtotal->SetBinContent(c, Esum/Nsum);
-
+		if(totalevents> 0.)hCellNtotal   ->SetBinContent(c, Nsum/totalevents);  //..number of hits per event
+		if(Nsum > 0.)      hCellEtoNtotal->SetBinContent(c, Esum/Nsum);         //..average energy per hit
+		//ELI maybe plot 2-dimensional hit/event eta vs. phi??
 	}
-
 	delete hCellAmplitude;
 
-	// Process(hCellEtotal,   dnbins );
-	if(*pflag[0][0]==1)
-		Process(pflag, hCellEtoNtotal, Nsigma, dnbins, -1,compteur);
-	if(*pflag[0][0]==2)
-		Process(pflag, hCellNtotal, Nsigma,  dnbins,-1, compteur);
+	if(*pflag[0][0]==1) Process(pflag,hCellEtoNtotal,Nsigma,dnbins,-1);
+	if(*pflag[0][0]==2) Process(pflag,hCellNtotal,   Nsigma,dnbins,-1);
 }
 
 //_________________________________________________________________________
 //_________________________________________________________________________
 
-void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, Double_t Nsigma =4., Int_t compteur= 1, char* hname = "hCellAmplitude", Int_t dnbins = 1000)
+void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, Double_t Nsigma =4.)
 {
 	// Test cells shape using fit function f(x)=A*exp(-B*x)/x^2.
 	// Produce values per cell + distributions for A,B and chi2/ndf parameters.
-	//   Int_t count;
-	//   count = compteur;
 
+	char* hname = "hCellAmplitude";
+	Int_t dnbins = 1000;
 	TH2 *hCellAmplitude = (TH2*) gFile->Get(Form("%s",hname));
 
 	// binning parameters
@@ -717,45 +696,56 @@ void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, 
 
 
 	if(*pflag[0][0]==3)
-		Process(pflag, hFitChi2Ndf, Nsigma, dnbins, maxval3,compteur);
+		Process(pflag, hFitChi2Ndf, Nsigma, dnbins, maxval3);
 
 
 	if(*pflag[0][0]==4)
-		Process(pflag, hFitA, Nsigma, dnbins,  maxval1,compteur);
+		Process(pflag, hFitA, Nsigma, dnbins,  maxval1);
 
 
 	if(*pflag[0][0]==5)
-		Process(pflag, hFitB, Nsigma, dnbins, maxval2,compteur);
+		Process(pflag, hFitB, Nsigma, dnbins, maxval2);
 
 }
 
 //_________________________________________________________________________
 //_________________________________________________________________________
 
-void ExcludeCells(Int_t *pexclu[23040])
+void ExcludeCells(Int_t *pexclu[23040], Int_t NrCells)
 {
-	//find the cell with 0 entrie for excluding
+	//..This function finds cells with zero entries
+	//..to exclude them from the analysis
+	//cout<<"In ExcludeCells: Name of current file: "<<gFile->GetName()<<endl;
 	TH2 *hCellAmplitude = (TH2*) gFile->Get("hCellAmplitude");
+    Int_t SumOfExcl=0;
 
-
-	for (Int_t c = 1; c <= 23040; c++)
+	cout<<"    o Flag bad cells that empty "<<endl;
+	//Direction of cell ID
+    for (Int_t c = 1; c <= NrCells; c++)
 	{
 		Double_t Nsum = 0;
-		//   cout << "exclude cells ca va "<<endl
+		//Direction of amplitude
 		for (Int_t l = 1; l <= hCellAmplitude->GetNbinsX(); l++)
 		{
 			Double_t N = hCellAmplitude->GetBinContent(l, c);
 			Nsum += N;
 		}
-		//  cout << "2emem exclude cells ca va "<< c-1 << endl;
-		if(Nsum < 0.5 && *pexclu[c-1]!=1)
+		//..If the amplitude in one cell is basically 0
+		//..mark the cell as excluded
+		//ELI I just wonder how you can have less than one but more than 0.5
+		//shouldnt everything below 1 be excluded?
+		if(Nsum >= 0.5 && Nsum < 1)cout<<"-----------------------small but non zero!!!!"<<endl;
+		if(Nsum < 0.5 && Nsum != 0)cout<<"-----------------------non zero!!!!"<<endl;
+
+		if(Nsum < 0.5)
 		{
 			*pexclu[c-1]=1;
-		}//trick for criterum 7
-		//if(Nsum < 0.5 ) *pexclu[c-1]=1;
+			SumOfExcl++;
+		}
 		else *pexclu[c-1]=0;
 	}
 	delete hCellAmplitude;
+	cout<<"    o Number of excluded cells: "<<SumOfExcl<<endl;
 }
 
 //_________________________________________________________________________
@@ -783,11 +773,15 @@ void KillCells(Int_t filter[], Int_t nbc)
 //_________________________________________________________________________
 //_________________________________________________________________________
 
-void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, Int_t compteur = 1, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString Infilefile ="none")
+void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString Infilefile ="none")
 {
+	cout<<"o o o o o o o o o o o o o o o o o o o o o o  o o o"<<endl;
+	cout<<"o o o PeriodAnalysis for flag "<<criterum<<" o o o"<<endl;
+	cout<<"o o o Done in the energy range E "<<Emin<<"-"<<Emax<<endl;
+	TH2 *hCellAmplitude = (TH2*) gFile->Get("hCellAmplitude");
 
-	// what it does in function of criterum value
-
+    //..This function does perform different checks depending on the given criterium variable
+	//..diffrent possibilities for criterium are:
 	// 1 : average E for E>Emin
 	// 2 : entries for E>Emin
 	// 3 : ki²/ndf  (from fit of each cell Amplitude between Emin and Emax)
@@ -795,19 +789,20 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	// 5 : B parameter (from fit of each cell Amplitude between Emin and Emax)
 	// 6 :
 	// 7 : give bad + dead list
-
-	Int_t newBC[23040];       // newBC[0] donne l'id de la premiere BC trouvée
-	Int_t *pexclu[23040];
-	Int_t exclu[23040];
-	Int_t *pflag[23040][7];
-	Int_t flag[23040][7];
-	Int_t bad[10000];
+	//ELI right now for testing!!4000
+    static const Int_t NrCells=4000;//17665;//23040;  //ELI this is in fact a very important number!!
+	Int_t newBC[NrCells];       // newBC[0] gives the id of the first BC found
+	Int_t *pexclu[NrCells];
+	Int_t exclu[NrCells];
+	Int_t *pflag[NrCells][7];
+	Int_t flag[NrCells][7];
+	Int_t bad[NrCells];
 	Int_t i, nb=0;
 
 	//INIT
 	TString output, bilan;
-	output.Form("Criterum-%d_Emin-%.2f_Emax-%.2f.txt",criterum,Emin,Emax);
-	for(i=0;i<23040;i++)  //what is this number 23040??
+	output.Form("BadChannelOutput/Criterum%d_Emin-%.2f_Emax-%.2f.txt",criterum,Emin,Emax);
+	for(i=0;i<NrCells;i++)
 	{
 		exclu[i] =0;
 		pexclu[i]=&exclu[i];
@@ -817,159 +812,185 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 			pflag[i][j]=&flag[i][j];
 		}
 	}
-	flag[0][0]=criterum ; //to identify the criterum tested
+	//..Side note [x][y=0] is never used as there is no criterium 0
+	//..use the [0][0] to store the criterum that is tested
+	flag[0][0]=criterum ;
+	//..use the [0][1] to store the number of cells tested
+	flag[1][0]=NrCells;
+
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//.. CELLS EXCLUDED
+	//.. exclude cells from analysis (will not appear in results)
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	cout<<"o o o Exclude Cells o o o"<<endl;
+	ExcludeCells(pexclu,NrCells);
 
 
-	//CELLS EXCLUDED
-	ExcludeCells(pexclu); //exclude cells from analysis (will not appear in results)
-	// if(criterum < 7){
-	//   cout<<"Excluded/dead cells : "<<endl;
-	//   for(i=0;i<23040;i++) {if(exclu[i]!=0) {cout<<i<<", " ; nb++;}}
-	//   cout<<"("<<nb<<")"<<endl; nb=0;}
-	   //..This is the final part
-		//CRITERUM 7 : FINAL RESULT
-		if(criterum ==7)
-		{
-			bilan = Form("/BadChannelOutput/%s%sBC0Test%i.txt",period.Data(),pass.Data(),trial); ;
-			cout<<"FINAL RESULTS"<<endl;
-			ofstream file(bilan, ios::out | ios::trunc);
-			if(file)
-			{
-				file<<"Dead cells : "<<endl;
-				cout<<"Dead cells : "<<endl;
-				// MG modif
-				//for(i=0;i<23040;i++) {
-				for(i=0;i<17665;i++)
-				{
-					//if(exclu[i]!=0) {file<<i<<", " ; cout<<i<<", " ; nb++;}}
-					if(exclu[i]!=0)
-					{
-						file<<i<<"\n" ; cout<<i<<", " ; nb++;
-					}
-				}
-				// file<<i<<"\n" ; cout<<i<<", " ; nb++;}
-				file<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl; nb=0;
-
-				TFile::Open("filter.root");
-				ExcludeCells(pexclu);
-				file<<"Bad cells : "<<endl; cout<<"Bad cells : "<<endl;
-				for(i=0;i<17665;i++)
-				{
-					//	if(exclu[i]!=0) {bad[nb]=i; file<<i<<", " ; cout<<i<<", " ;
-					if(exclu[i]!=0)
-					{
-						bad[nb]=i; file<<i<<"\n" ; cout<<i<<", " ;
-						nb++;
-						//if(nb==999){ cout<<"TO MUCH BAD CELLS"<<endl ; break;}
-					}
-				}
-				file<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl;
-			}
-			file.close();
-
-			if(Infilefile!="none")
-			//if(Infilefile)
-			{
-				TFile::Open(Infilefile);
-				Int_t w=0 ;
-				Int_t c;
-				for(w=0; (w*9)<=nb; w++)
-				{
-					if(9<=(nb-w*9)) c = 9 ;
-					else c = nb-9*w ;
-					Draw(bad, w*9, c,period,pass,trial) ;
-				}
-			}
-			nb=0;
-		}
-
-
-	//ANALYSIS
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//.. ANALYSIS
+	//.. Build average distributions and fit them
+	//.. Three tests for bad cells:
+	//.. 1) Average energy per hit;
+	//.. 2) Average hit per event;
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	cout<<"o o o Analyze cell distributions o o o"<<endl;
 	//..For case 1 or 2
-	if (criterum < 3)      TestCellEandN(pflag, Emin, Emax,Nsigma,compteur);
+	if (criterum < 3)      TestCellEandN(pflag, Emin, Emax,Nsigma);
 	//..For case 3, 4 or 5
-	else if (criterum < 6) TestCellShapes(pflag, Emin, Emax, Nsigma,compteur);
+	else if (criterum < 6) TestCellShapes(pflag, Emin, Emax, Nsigma);
 
 
 	//RESULTS
 	if(criterum < 6)
 	{
 		nb=0;
-		cout<<"bad by lower value  Emin : "<< Emin << "  Emax = " << Emax << endl;
-		for(i=0;i<17665;i++)
+		cout<<"    o bad cells by lower value (for cell E between "<<Emin<<"-"<<Emax<<")"<<endl;
+		cout<<"      ";
+		for(i=0;i<NrCells;i++)
 		{
 			if(flag[i][criterum]==0 && exclu[i]==0)
 			{
 				nb++;
-				cout<<i<<", " ;}} cout<<"("<<nb<<")"<<endl; nb=0;
-				cout<<"bad by higher value  Emin : "<< Emin << "  Emax = " << Emax  <<endl;
-				for(i=0;i<17665;i++)
-				{
-					if(flag[i][criterum]==2 && exclu[i]==0)
-					{
-						nb++;
-						cout<<i<<", " ;
-					}
-				}
-				cout<<"("<<nb<<")"<<endl; nb=0;
+				cout<<i<<",";
+			}
+		}
+		cout<<"("<<nb<<")"<<endl;
+		nb=0;
+		cout<<"    o bad cells by lower value (for cell E between "<<Emin<<"-"<<Emax<<")"<<endl;
+		cout<<"      ";
+		for(i=0;i<NrCells;i++)
+		{
+			if(flag[i][criterum]==2 && exclu[i]==0)
+			{
+				nb++;
+				cout<<i<<",";
+			}
+		}
+		cout<<"("<<nb<<")"<<endl;
+		nb=0;
+		cout<<"    o Total number of bad cells "<<endl;
+		for(i=0;i<NrCells;i++)
+		{
+			if(flag[i][criterum]!=1 && exclu[i]==0)
+			{
+				newBC[nb]=i;
+				nb++;
+			}
+		}
+		cout<<"      ("<<nb<<")"<<endl;
 
-				cout<<"total bad "<<endl;
-				for(i=0;i<17665;i++)
-				{
-					if(flag[i][criterum]!=1 && exclu[i]==0)
-					{
-						newBC[nb]=i;
-						nb++;
-						cout<<i<<", " ;
-					}
-				}
-				cout<<"("<<nb<<")"<<endl;
 
-				//create a filtered file
-				KillCells(newBC,nb) ; nb=0;
 
-				//write in a file the results
-				ofstream file(output, ios::out | ios::trunc);
-				if(file)
+
+		//create a filtered file
+		KillCells(newBC,nb) ; nb=0;
+
+		//write in a file the results
+		ofstream file(output, ios::out | ios::trunc);
+		if(file)
+		{
+			file <<"criterum : "<<criterum<<", Emin = "<<Emin<<" GeV"<<", Emax = "<<Emax<<" GeV"<<endl;
+			file<<"bad by lower value : "<<endl;
+			for(i=0;i<NrCells;i++)
+			{
+				if(flag[i][criterum]==0 && exclu[i]==0)
 				{
-					file <<"criterum : "<<criterum<<", Emin = "<<Emin<<" GeV"<<", Emax = "<<Emax<<" GeV"<<endl;
-					file<<"bad by lower value : "<<endl;
-					for(i=0;i<17665;i++)
-					{
-						if(flag[i][criterum]==0 && exclu[i]==0)
-						{
-							nb++;
-							file<<i<<", " ;
-						}
-					}
-					file<<"("<<nb<<")"<<endl; nb=0;
-					file<<"bad by higher value : "<<endl;
-					for(i=0;i<17665;i++)
-					{
-						if(flag[i][criterum]==2 && exclu[i]==0)
-						{
-							nb++;
-							file<<i<<", " ;
-						}
-					}
-					file<<"("<<nb<<")"<<endl; nb=0;
-					file<<"total bad "<<endl;
-					for(i=0;i<17665;i++)
-					{
-						if(flag[i][criterum]!=1 && exclu[i]==0)
-						{
-							newBC[nb]=i;
-							nb++;
-							file<<i<<", " ;
-						}
-					}
-					file<<"("<<nb<<")"<<endl;
-					file.close();
+					nb++;
+					file<<i<<", " ;
 				}
-				else  cerr << "opening error" << endl;
+			}
+			file<<"("<<nb<<")"<<endl; nb=0;
+			file<<"bad by higher value : "<<endl;
+			for(i=0;i<NrCells;i++)
+			{
+				if(flag[i][criterum]==2 && exclu[i]==0)
+				{
+					nb++;
+					file<<i<<", " ;
+				}
+			}
+			file<<"("<<nb<<")"<<endl; nb=0;
+			file<<"total bad "<<endl;
+			for(i=0;i<NrCells;i++)
+			{
+				if(flag[i][criterum]!=1 && exclu[i]==0)
+				{
+					newBC[nb]=i;
+					nb++;
+					file<<i<<", " ;
+				}
+			}
+			file<<"("<<nb<<")"<<endl;
+			file.close();
+		}
+		else  cerr << "opening error" << endl;
 	}
 
+	// if(criterum < 7){
+	//   cout<<"Excluded/dead cells : "<<endl;
+	//   for(i=0;i<23040;i++) {if(exclu[i]!=0) {cout<<i<<", " ; nb++;}}
+	//   cout<<"("<<nb<<")"<<endl; nb=0;}
+	//..This is the final part
+	//CRITERUM 7 : FINAL RESULT
+	if(criterum ==7)
+	{
+		nb =0;
+		bilan = Form("BadChannelOutput/%s%sBC0Test%i.txt",period.Data(),pass.Data(),trial); ;
 
+		cout<<"    o Final results o "<<endl;
+		cout<<"    o Open file: "<<bilan<<endl;
+
+		ofstream file(bilan, ios::out | ios::trunc);
+		if(file)
+		{
+			file<<"Dead cells : "<<endl;
+			cout<<"Dead cells : "<<endl;
+			for(i=0;i<NrCells;i++)
+			{
+				//if(exclu[i]!=0) {file<<i<<", " ; cout<<i<<", " ; nb++;}}
+				if(exclu[i]!=0)
+				{
+					file<<i<<"\n" ; cout<<i<<", " ; nb++;
+				}
+			}
+			// file<<i<<"\n" ; cout<<i<<", " ; nb++;}
+			file<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl; nb=0;
+
+			TFile::Open("filter.root");
+			ExcludeCells(pexclu,NrCells);
+			file<<"Bad cells : "<<endl; cout<<"Bad cells : "<<endl;
+			for(i=0;i<NrCells;i++)
+			{
+				//	if(exclu[i]!=0) {bad[nb]=i; file<<i<<", " ; cout<<i<<", " ;
+				if(exclu[i]!=0)
+				{
+					bad[nb]=i; file<<i<<"\n" ; cout<<i<<", " ;
+					nb++;
+					//if(nb==999){ cout<<"TO MUCH BAD CELLS"<<endl ; break;}
+				}
+			}
+			file<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl;
+		}
+		cout<<"2tets"<<endl;
+		file.close();
+		cout<<"3tets"<<endl;
+
+		if(Infilefile!="none")
+			//if(Infilefile)
+		{
+			cout<<"4tets"<<endl;
+
+			TFile::Open(Infilefile);
+			Int_t c;
+			cout<<"nb"<<nb<<endl;
+			for(Int_t w=0; (w*9)<=nb; w++)
+			{
+				if(9<=(nb-w*9)) c = 9 ;
+				else c = nb-9*w ;
+				Draw(bad, w*9, c,period,pass,trial) ;
+			}
+		}
+	}
 
 }
 //_________________________________________________________________________
@@ -989,49 +1010,54 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 	if(trigger=="default"||trigger=="INT7"||trigger=="DMC7"||trigger=="AnyINTnoBC")
 	{
 		TFile::Open(file);
-		PeriodAnalysis(2, 4., 0.2,0.5,1,period,pass,trial); // nb ent emin emax
+		PeriodAnalysis(2, 4.,0.2,0.5,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(2, 4., 0.5, 1.,1,period,pass,trial); // nb ent emin emax
+		PeriodAnalysis(2, 4.,0.5, 1.,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(1, 6., 0.5, 1.,1,period,pass,trial); // energy mea emin emax
+		PeriodAnalysis(1, 6.,0.5, 1.,period,pass,trial); // energy mea emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(2, 4., 1., 2.,1,period,pass,trial); // nb ent emin emax
+		PeriodAnalysis(2, 4., 1., 2.,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(1, 6., 1., 2.,1,period,pass,trial); // energy mea emin emax
+		PeriodAnalysis(1, 6., 1., 2.,period,pass,trial); // energy mea emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(2, 4., 1.,10.,1,period,pass,trial); //nb ent emin emax
+		PeriodAnalysis(2, 4., 1.,10.,period,pass,trial); //nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(1, 6., 1.,10.,1,period,pass,trial); //energy mea emin emax
+		PeriodAnalysis(1, 6., 1.,10.,period,pass,trial); //energy mea emin emax
 	}
 	else
 	{
 		//..you have the possibility to change analysis configuration  in function of trigger type
 		//..PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, Int_t compteur = 1, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString Infilefile ="none"){
-		//..Criterium 1,2 or 7
+		//..Criterium 1,2
+		//..low energies 0.5-2
 		TFile::Open(file);
-
-		PeriodAnalysis(2, 6.,0.5, 2.,1,period,pass,trial); // nb ent emin emax
+		PeriodAnalysis(2, 6.,0.5, 2.,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(1, 6.,0.5, 2.,1,period,pass,trial); // energy mea emin emax
+		PeriodAnalysis(1, 6.,0.5, 2.,period,pass,trial); // energy mea emin emax
+		//..mid energies
+        TFile::Open("filter.root");
+		PeriodAnalysis(2, 6., 2., 5.,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(2, 6., 2., 5.,1,period,pass,trial); // nb ent emin emax
+		PeriodAnalysis(1, 6., 2., 5.,period,pass,trial); // energy mea emin emax
+		//..high energies
+/*ELI this is not working properly because ther is no gaussian in fact
+ but and exponential tail
+ 		TFile::Open("filter.root");
+		PeriodAnalysis(2, 6., 5.,10.,period,pass,trial); // nb ent emin emax
 		TFile::Open("filter.root");
-		PeriodAnalysis(1, 6., 2., 5.,1,period,pass,trial); // energy mea emin emax
-		TFile::Open("filter.root");
-		PeriodAnalysis(2, 6., 5.,10.,1,period,pass,trial); // nb ent emin emax
-		TFile::Open("filter.root");
-		PeriodAnalysis(1, 6., 5.,10.,1,period,pass,trial); // energy mea emin emax
+		PeriodAnalysis(1, 6., 5.,10.,period,pass,trial); // energy mea emin emax
+*/
 	}
 	//provide dead cells list from original file and draw bad cells candidate from indicated file
 	TFile::Open(file);
-	PeriodAnalysis(7,0.,0.,0.,1,period,pass,trial,file);
+	PeriodAnalysis(7,0.,0.,0.,period,pass,trial,file);
 
 	cout<<"o o o End of bad channel analysis o o o"<<endl;
 }
 //_________________________________________________________________________
 //________________________________________________________________________
 
-void BadChannelAnalysis(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default",Int_t trial=0, TString baseLocalPath = "./")
+void BadChannelAnalysis(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default",Int_t trial=0)
 {
 	//BadChannelAnalysis("EMCAL","LHC15o","muon_calo_pass1","AnyINTnoBC"/"default")???  //possibility for trigger: AnyINT, AnyINTnoBC, EMCnoBC
 
@@ -1048,7 +1074,6 @@ void BadChannelAnalysis(TString period = "LHC15f", TString pass = "pass2", TStri
 	cout<<endl;
 	cout<<". . .Load inputfile with name: "<<inputfile<<" . . . . . . . ."<<endl;
 	cout<<". . .Continue process by . . . . . . . . . . . ."<<endl;
-	//inputfile=inputfile(Form( "%s/%s/%s/%s%sRunlist0New.root", baseLocalPath.Data(), period.Data(),pass.Data(),period.Data(),pass.Data(),trigger.Data()));
 	//inputfile="LHC15omuon_caloLegoRunlist0New.root";
 	cout<<endl;
 	BCAnalysis(inputfile,trigger,period,pass,trial);
