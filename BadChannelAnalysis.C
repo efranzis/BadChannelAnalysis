@@ -1056,11 +1056,17 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 }
 //_________________________________________________________________________
 //________________________________________________________________________
-
+void BadChannelAnalysis()
+{
+	cout<<"Error need input arguments! Try:"<<endl;
+	cout<<".x BadChannelAnalysis.C(''LHC16h'',''muon_caloLego'',''AnyINT'')"<<endl;
+}
+//_________________________________________________________________________
+//________________________________________________________________________
 void BadChannelAnalysis(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default",Int_t trial=0)
 {
-	//BadChannelAnalysis("EMCAL","LHC15o","muon_calo_pass1","AnyINTnoBC"/"default")???  //possibility for trigger: AnyINT, AnyINTnoBC, EMCnoBC
 
+	// run by .x BadChannelAnalysis.C("LHC16h","muon_caloLego","AnyINT")
 	//..First use Convert() to merge historgrams from a runlist .txt file
     //..The merged outputfile contains 3 different histograms
 	//..In a second step analyse these merged histograms
