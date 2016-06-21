@@ -74,6 +74,7 @@
 #include <TGridResult.h>
 #include <TClonesArray.h>
 #include <TObjString.h>
+#include <TLatex.h>
 #include <stdio.h>
 #include <fstream>
 #include <iostream>
@@ -83,8 +84,9 @@
 #endif
 using namespace std;
 
-void Draw2(Int_t cell, Int_t cellref=400) {
-
+void Draw2(Int_t cell, Int_t cellref=400)
+{
+    //ELI not used anywhere
 	gROOT->SetStyle("Plain");
 	gStyle->SetOptStat(0);
 	gStyle->SetFillColor(kWhite);
@@ -129,49 +131,51 @@ void Draw2(Int_t cell, Int_t cellref=400) {
 
 }
 
-void Draw(Int_t cell[], Int_t iBC, Int_t nBC, TString period="LHC15f", TString pass="pass2", Int_t trial=0,const Int_t cellref=2377){
+void SaveBadCellsToPDF(Int_t cell[], Int_t iBC, Int_t nBC, TString PdfName, const Int_t cellref=2377)
+{
 	//Allow to produce a pdf file with badcells candidates (red) compared to a refence cell (black)
-
 	gROOT->SetStyle("Plain");
 	gStyle->SetOptStat(0);
 	gStyle->SetFillColor(kWhite);
 	gStyle->SetTitleFillColor(kWhite);
 	gStyle->SetPalette(1);
-	char out[120]; char title[100]; char name[100];
-	TString slide(Form("Cells %d-%d",cell[iBC],cell[iBC+nBC-1]));
+	char out[120];
+	char title[100];
+	char name[100];
+	if(cell[iBC]==-1)cout<<"### strange shouldn't happen 1"<<endl;
+	if(cell[iBC+nBC-1]==-1)cout<<"### strange shouldn't happen 2"<<endl;
 
-	TString reflegend =  Form("reference Cell %i",cellref);
+	TString slide     = Form("Cells %d-%d",cell[iBC],cell[iBC+nBC-1]);
+    TString reflegend = Form("reference Cell %i",cellref);
 	sprintf(out,"%d-%d.gif",cell[iBC],cell[iBC+nBC-1]);
+
 	TH2 *hCellAmplitude = (TH2*) gFile->Get("hCellAmplitude");
 	TH1 *hCellref = hCellAmplitude->ProjectionX("badcells",cellref+1,cellref+1);
-	Int_t i;
 
 	TCanvas *c1 = new TCanvas("badcells","badcells",1000,750);
-	c1->SetLogy();
+	//c1->SetLogy();
 	if(nBC > 6) c1->Divide(3,3);
 	else if (nBC > 3)  c1->Divide(3,2);
 	else  c1->Divide(3,1);
-	// hCellref->Rebin(3);
+
 	TLegend *leg = new TLegend(0.7, 0.7, 0.9, 0.9);
-	for(i=0; i<nBC ; i++)
+	for(Int_t i=0; i<nBC ; i++)
 	{
-		sprintf(name,"Cell %d",cell[iBC+i]) ;
+		sprintf(name, "Cell %d",cell[iBC+i]) ;
 		TH1 *hCell = hCellAmplitude->ProjectionX(name,cell[iBC+i]+1,cell[iBC+i]+1);
+		sprintf(title,"Cell %d      Entries : %d  Ref : %d",cell[iBC+i], (Int_t)hCell->GetEntries(), (Int_t)hCellref->GetEntries() ) ;
 
 		c1->cd(i%9 + 1);
 		c1->cd(i%9 + 1)->SetLogy();
-		sprintf(title,"Cell %d      Entries : %d  Ref : %d",cell[iBC+i], (Int_t)hCell->GetEntries(), (Int_t)hCellref->GetEntries() ) ;
 		hCell->SetLineColor(2);
-		// cout<<title<<endl ;
 		hCell->SetMaximum(1e6);
-		// hCell->Rebin(3);
 		hCell->SetAxisRange(0.,10.);
 		hCell->GetXaxis()->SetTitle("E (GeV)");
 		hCell->GetYaxis()->SetTitle("N Entries");
-		hCellref->SetAxisRange(0.,8.);
 		hCell->SetLineWidth(1) ;
-		hCellref->SetLineWidth(1);
 		hCell->SetTitle(title);
+		hCellref->SetAxisRange(0.,8.);
+		hCellref->SetLineWidth(1);
 		hCellref->SetLineColor(1);
 
 		if(i==0)
@@ -184,28 +188,24 @@ void Draw(Int_t cell[], Int_t iBC, Int_t nBC, TString period="LHC15f", TString p
 		leg->Draw();
 	}
 
-	//CREATE A PDF FILE
-
-	//ELI TString PdfName =  Form("/scratch/alicehp2/germain/QANew2/BadChannelNew/2016/%s%sList0Test%i.pdf",period.Data(),pass.Data(),trial);
-	TString PdfName =  Form("BadChannelOutput/%s%sList0Test%i.pdf",period.Data(),pass.Data(),trial);
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//..Store the created canvas in a .pdf file
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	if(nBC<9)
 	{
-		PdfName +=")";
+		PdfName +=")";  //ELI this is strange
 		c1->Print(PdfName.Data());
 	}
 	else if(iBC==0)
 	{
-		PdfName +="(";
+		PdfName +="("; //ELI this is strange
 		c1->Print(PdfName.Data());
 	}
 	else  c1->Print(PdfName.Data());
 
-
-	//  c1->SaveAs(out);
 	delete hCellref ;
 	delete c1 ;
 	delete leg ;
-
 }
 
 //_________________________________________________________________________
@@ -229,8 +229,7 @@ TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString t
     TH2F *hCellTime               = new TH2F("hCellTime","Cell Time",250,-275,975,23040,0,23040);
 
     //..Open the text file with the run list numbers and run index
-    TString file = Form("/scratch/alicehp2/germain/QANew2/%s%sBC0.txt",period.Data(),pass.Data());
-    /*ELI*/file = Form("AnalysisInput/%s/%s/runListSmall.txt",period.Data(),pass.Data());
+    /*ELI*/TString file = Form("AnalysisInput/%s/%s/runList.txt",period.Data(),pass.Data());
     cout<<"o o o Open .txt file with run indices. Name = " << file << endl;
     FILE *pFile = fopen(file.Data(), "r");
     if(!pFile)cout<<"count't open file!"<<endl;
@@ -394,10 +393,10 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	//. . .build the distribution of average values
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-	//TH1 *distrib = new TH1F(Form("%sDistr",(char*)HistoName), "", dnbins, inhisto->GetMinimum(), dmaxval);
 	TH1 *distrib = new TH1F(Form("%sDistr",(const char*)HistoName), "", dnbins, inhisto->GetMinimum(), dmaxval);
 	distrib->SetXTitle(inhisto->GetYaxis()->GetTitle());
 	distrib->SetYTitle("Entries");
+	//distrib->GetXaxis()->SetNdivisions(505);
 	//..fill the distribution of avarge cell values
 	for (Int_t c = 1; c <= inhisto->GetNbinsX(); c++)
 	{
@@ -426,22 +425,29 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	//. . .fit histogram
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	Int_t higherbin=0,i;
-	for (i = 2; i <= distrib->GetNbinsX(); i++)
+	for(i = 2; i <= dnbins; i++)
 	{
-		if(distrib->GetBinContent(higherbin) < distrib->GetBinContent(i))
-			higherbin = i ;
+		if(distrib->GetBinContent(higherbin) < distrib->GetBinContent(i))  higherbin = i ;
 	}
-
-	for(i=higherbin ; i<=dnbins ; i++)
+	//..good range is around the max value as long as the
+	//..bin content is larger than 2 entries
+	for(i = higherbin ; i<=dnbins ; i++)
+	{
 		if(distrib->GetBinContent(i)<2) break ;
-	goodmax = distrib->GetBinCenter(i);
-
-	for(i=higherbin ; i>0 ; i--)
+		goodmax = distrib->GetBinCenter(i);
+	}
+	for(i = higherbin ; i>1 ; i--)
+	{
 		if(distrib->GetBinContent(i)<2) break ;
-	goodmin = distrib->GetBinLowEdge(i);
-
+		goodmin = distrib->GetBinLowEdge(i);
+	}
+    //cout<<"higherbin : "<<higherbin<<endl;
+    //cout<<"good range : "<<goodmin<<" - "<<goodmax<<endl;
 
 	TF1 *fit2 = new TF1("fit2", "gaus");
+	//..start the fit with a mean of the highest value
+	fit2->SetParameter(1,higherbin);
+
 	distrib->Fit(fit2, "0LQEM", "", goodmin, goodmax);
 	Double_t sig, mean, chi2ndf;
 	// Marie midif to take into account very non gaussian distrig
@@ -477,8 +483,19 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	TLegend *leg = new TLegend(0.60,0.82,0.9,0.88);
 	leg->AddEntry(lline, "Good region boundary","l");
 	leg->Draw("same");
-	//fit2->Draw("same");
 
+	fit2->SetLineColor(kOrange-3);
+	fit2->SetLineStyle(1);//7
+	fit2->Draw("same");
+
+	TLatex* text;
+	if(crit==1)text=new TLatex(0.2,0.8,Form("Good range: %.2f-%.2f",goodmin,goodmax));
+	if(crit==2)text=new TLatex(0.2,0.8,Form("Good range: %.2f-%.2fx10^-5",goodmin*100000,goodmax*100000));
+	text->SetTextSize(0.06);
+	text->SetNDC();
+	text->SetTextColor(1);
+	//text->SetTextAngle(angle);
+	text->Draw();
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	//. . .Save histogram
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -490,9 +507,9 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 
 
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-	//. . .Mark the bad cells in the pflag array
-	//. . .(0= bad because lower than min allowed)
-	//. . .(2= bad because higher than max allowed)
+	//. . . Mark the bad cells in the pflag array
+	//. . .(0= bad because cell average value lower than min allowed)
+	//. . .(2= bad because cell average value higher than max allowed)
 	//. . .(1 by default)
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	cout<<"    o Flag bad cells that are outside the good range "<<endl;
@@ -501,6 +518,7 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	for(Int_t c = 1; c <= *pflag[1][0]; c++)
 	{
 		cel=(Int_t)(inhisto->GetBinLowEdge(c)+0.1);  //ELI what does that 0.1 stand for?
+		//cel=0 - c=1, cel=1 - c=2
 		if (inhisto->GetBinContent(c) <= goodmin)
 		{
 			*pflag[cel][crit]=0;
@@ -522,7 +540,7 @@ void TestCellEandN(Int_t *pflag[23040][7], Double_t Emin = 0.1, Double_t Emax=2.
 	Int_t dnbins = 200;
 	TH2 *hCellAmplitude = (TH2*) gFile->Get("hCellAmplitude");
 
-	// binning parameters
+	//..binning parameters
 	Int_t ncells  = hCellAmplitude->GetNbinsY();
 	Double_t amin = hCellAmplitude->GetYaxis()->GetXmin();
 	Double_t amax = hCellAmplitude->GetYaxis()->GetXmax();
@@ -531,10 +549,12 @@ void TestCellEandN(Int_t *pflag[23040][7], Double_t Emin = 0.1, Double_t Emax=2.
 	TH1F *hCellNtotal = new TH1F(Form("hCellNtotal_E%.2f-%.2f",Emin,Emax),Form("Number of hits per events, %.2f < E < %.2f GeV",Emin,Emax), ncells,amin,amax);
 	hCellNtotal->SetXTitle("AbsId");
 	hCellNtotal->SetYTitle("Av. hits per events");
+	hCellNtotal->GetXaxis()->SetNdivisions(505);
 
-	TH1F *hCellEtoNtotal = new TH1F(Form("hCellEtoNtotal_E%.2f-%.2f",Emin,Emax),Form("Average energy per hit,%.2f < E < %.2f GeV",Emin,Emax), ncells,amin,amax);
+	TH1F *hCellEtoNtotal = new TH1F(Form("hCellEtoNtotal_E%.2f-%.2f",Emin,Emax),Form("Average energy per hit, %.2f < E < %.2f GeV",Emin,Emax), ncells,amin,amax);
 	hCellEtoNtotal->SetXTitle("AbsId");
 	hCellEtoNtotal->SetYTitle("Av. energy per hit, GeV");
+	hCellEtoNtotal->GetXaxis()->SetNdivisions(505);
 
 	TH1* hNEventsProcessedPerRun = (TH1*) gFile->Get("hNEventsProcessedPerRun");
 	Double_t totalevents = hNEventsProcessedPerRun->Integral(1, hNEventsProcessedPerRun->GetNbinsX());
@@ -560,7 +580,8 @@ void TestCellEandN(Int_t *pflag[23040][7], Double_t Emin = 0.1, Double_t Emax=2.
 	delete hCellAmplitude;
 
 	if(*pflag[0][0]==1) Process(pflag,hCellEtoNtotal,Nsigma,dnbins,-1);
-	if(*pflag[0][0]==2) Process(pflag,hCellNtotal,   Nsigma,dnbins,-1);
+	if(*pflag[0][0]==2 && Emin==0.5) Process(pflag,hCellNtotal,   Nsigma,dnbins*9000,-1);//ELI I did massivley increase the binning now but it helps a lot
+	if(*pflag[0][0]==2 && Emin>0.5)  Process(pflag,hCellNtotal,   Nsigma,dnbins*17,-1);
 }
 
 //_________________________________________________________________________
@@ -568,12 +589,13 @@ void TestCellEandN(Int_t *pflag[23040][7], Double_t Emin = 0.1, Double_t Emax=2.
 
 void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, Double_t Nsigma =4.)
 {
+	//ELI this method is currently not used
 	// Test cells shape using fit function f(x)=A*exp(-B*x)/x^2.
 	// Produce values per cell + distributions for A,B and chi2/ndf parameters.
 
-	char* hname = "hCellAmplitude";
+	TString hname= "hCellAmplitude";
 	Int_t dnbins = 1000;
-	TH2 *hCellAmplitude = (TH2*) gFile->Get(Form("%s",hname));
+	TH2 *hCellAmplitude = (TH2*) gFile->Get(Form("%s",(const char*)hname));
 
 	// binning parameters
 	Int_t  ncells = hCellAmplitude->GetNbinsY();
@@ -582,15 +604,15 @@ void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, 
 	cout << "ncells " << ncells << " amin = " << amin << "amax = " << amax<< endl;
 
 	// initialize histograms
-	TH1 *hFitA = new TH1F(Form("hFitA_%s",hname),"Fit A value", ncells,amin,amax);
+	TH1 *hFitA = new TH1F(Form("hFitA_%s",(const char*)hname),"Fit A value", ncells,amin,amax);
 	hFitA->SetXTitle("AbsId");
 	hFitA->SetYTitle("A");
 
-	TH1 *hFitB = new TH1F(Form("hFitB_%s",hname),"Fit B value", ncells,amin,amax);
+	TH1 *hFitB = new TH1F(Form("hFitB_%s",(const char*)hname),"Fit B value", ncells,amin,amax);
 	hFitB->SetXTitle("AbsId");
 	hFitB->SetYTitle("B");
 
-	TH1 *hFitChi2Ndf = new TH1F(Form("hFitChi2Ndf_%s",hname),"Fit #chi^{2}/ndf value", ncells,amin,amax);
+	TH1 *hFitChi2Ndf = new TH1F(Form("hFitChi2Ndf_%s",(const char*)hname),"Fit #chi^{2}/ndf value", ncells,amin,amax);
 	hFitChi2Ndf->SetXTitle("AbsId");
 	hFitChi2Ndf->SetYTitle("#chi^{2}/ndf");
 
@@ -619,10 +641,8 @@ void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, 
 				else MSA -= (fit->GetParameter(0) - prev) ;
 				prev = fit->GetParameter(0);
 			}
-
 			else
 			{
-
 				if((fit->GetParameter(0) - maxval1) > 0. && (fit->GetParameter(0) - maxval1) < (MSA/1000.))
 				{
 					maxval1 = fit->GetParameter(0);
@@ -630,8 +650,6 @@ void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, 
 			}
 		}
 		else hFitA->SetBinContent(k, 5000.);
-
-
 
 		if(fit->GetParameter(1) < 5000.)
 		{
@@ -644,10 +662,8 @@ void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, 
 				else MSB -= (fit->GetParameter(1) - prev2) ;
 				prev2 = fit->GetParameter(1);
 			}
-
 			else
 			{
-
 				if((fit->GetParameter(1) - maxval2) > 0. && (fit->GetParameter(1) - maxval2) < (MSB/1000.))
 				{
 					maxval2 = fit->GetParameter(1);
@@ -671,10 +687,8 @@ void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, 
 				else MSki2 -= (ki2 - prev3) ;
 				prev3 = ki2;
 			}
-
 			else
 			{
-
 				if((ki2 - maxval3) > 0. && (ki2 - maxval3) < (MSki2/1000.))
 				{
 					maxval3 = ki2;
@@ -682,7 +696,6 @@ void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, 
 			}
 		}
 		else hFitChi2Ndf->SetBinContent(k, 1000.);
-
 
 		delete fit ;
 	}
@@ -693,41 +706,32 @@ void TestCellShapes(Int_t *pflag[23040][7], Double_t fitEmin, Double_t fitEmax, 
 	//  maxval1 =
 	//  maxval2 =
 	//  maxval3 =
-
-
 	if(*pflag[0][0]==3)
 		Process(pflag, hFitChi2Ndf, Nsigma, dnbins, maxval3);
-
-
 	if(*pflag[0][0]==4)
 		Process(pflag, hFitA, Nsigma, dnbins,  maxval1);
-
-
 	if(*pflag[0][0]==5)
 		Process(pflag, hFitB, Nsigma, dnbins, maxval2);
-
 }
-
 //_________________________________________________________________________
 //_________________________________________________________________________
-
 void ExcludeCells(Int_t *pexclu[23040], Int_t NrCells)
 {
 	//..This function finds cells with zero entries
 	//..to exclude them from the analysis
 	//cout<<"In ExcludeCells: Name of current file: "<<gFile->GetName()<<endl;
 	TH2 *hCellAmplitude = (TH2*) gFile->Get("hCellAmplitude");
-    Int_t SumOfExcl=0;
 
-	cout<<"    o Flag bad cells that empty "<<endl;
-	//Direction of cell ID
+	Int_t SumOfExcl=0;
+
+	//..Direction of cell ID
     for (Int_t c = 1; c <= NrCells; c++)
 	{
 		Double_t Nsum = 0;
-		//Direction of amplitude
-		for (Int_t l = 1; l <= hCellAmplitude->GetNbinsX(); l++)
+		//..Direction of amplitude
+		for (Int_t amp = 1; amp <= hCellAmplitude->GetNbinsX(); amp++)
 		{
-			Double_t N = hCellAmplitude->GetBinContent(l, c);
+			Double_t N = hCellAmplitude->GetBinContent(amp,c);
 			Nsum += N;
 		}
 		//..If the amplitude in one cell is basically 0
@@ -739,6 +743,7 @@ void ExcludeCells(Int_t *pexclu[23040], Int_t NrCells)
 
 		if(Nsum < 0.5)
 		{
+			//..histogram bin=cellID+1
 			*pexclu[c-1]=1;
 			SumOfExcl++;
 		}
@@ -746,35 +751,45 @@ void ExcludeCells(Int_t *pexclu[23040], Int_t NrCells)
 	}
 	delete hCellAmplitude;
 	cout<<"    o Number of excluded cells: "<<SumOfExcl<<endl;
+	cout<<"     ("<<SumOfExcl<<")"<<endl;
 }
 
 //_________________________________________________________________________
 //_________________________________________________________________________
-
 void KillCells(Int_t filter[], Int_t nbc)
 {
-	// kill a cell : put it to 0 entrie
-	TH2 *hCellAmplitude = (TH2*) gFile->Get("hCellAmplitude");
-
-	for(Int_t i =0; i<nbc; i++){
-		for(Int_t j=0; j<= hCellAmplitude->GetNbinsX() ;j++){
-			hCellAmplitude->SetBinContent(j,filter[i]+1,0) ; }}
-
+	cout<<"    o Kill cells -> set bin content of "<<nbc<<" bad cells to 0 "<<endl;
+	// kill a cell : put its entry to 0
+	TH2 *hCellAmplitude          = (TH2*) gFile->Get("hCellAmplitude");
 	TH1* hNEventsProcessedPerRun = (TH1*) gFile->Get("hNEventsProcessedPerRun");
 
-	TFile *tf = new TFile("filter.root","recreate");
+	//..loop over number of identified bad cells. ID is stored in filer[] array
+	for(Int_t i =0; i<nbc; i++)
+	{
+		if(filter[i]==-1)cout<<"#### That is strange - shouln't happen"<<endl;
+		//..set all amplitudes for a given cell to 0
+		for(Int_t amp=0; amp<= hCellAmplitude->GetNbinsX() ;amp++)
+		{
+			                        //(amplitiude,cellID,new value)
+			//..CellID=0 is stored in bin1 so we need to shift+1
+			hCellAmplitude->SetBinContent(amp,filter[i]+1,0);
+		}
+	}
+	TFile *tf = new TFile("ConvertOutput/filter.root","recreate");
 	hCellAmplitude->Write();
 	hNEventsProcessedPerRun->Write();
 	tf->Write();
 	tf->Close();
-	delete hCellAmplitude; delete hNEventsProcessedPerRun;
+	delete hCellAmplitude;
+	delete hNEventsProcessedPerRun;
 }
-
 //_________________________________________________________________________
 //_________________________________________________________________________
-
 void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString Infilefile ="none")
 {
+	cout<<""<<endl;
+	cout<<""<<endl;
+	cout<<""<<endl;
 	cout<<"o o o o o o o o o o o o o o o o o o o o o o  o o o"<<endl;
 	cout<<"o o o PeriodAnalysis for flag "<<criterum<<" o o o"<<endl;
 	cout<<"o o o Done in the energy range E "<<Emin<<"-"<<Emax<<endl;
@@ -790,26 +805,31 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	// 6 :
 	// 7 : give bad + dead list
 	//ELI right now for testing!!4000
-    static const Int_t NrCells=4000;//17665;//23040;  //ELI this is in fact a very important number!!
-	Int_t newBC[NrCells];       // newBC[0] gives the id of the first BC found
-	Int_t *pexclu[NrCells];
-	Int_t exclu[NrCells];
-	Int_t *pflag[NrCells][7];
-	Int_t flag[NrCells][7];
-	Int_t bad[NrCells];
-	Int_t i, nb=0;
+    static const Int_t NrCells=16900;//17665;//23040;  //ELI this is in fact a very important number!!
 
+    //ELI a comment about the array positions
+    //..In the histogram: bin 1= cellID 0, bin 2= cellID 1 etc
+    //..In the arrays: array[cellID]= some information
+    Int_t newBC[NrCells];       // starts at newBC[0] stores cellIDs  (cellID = bin-1)
+	Int_t *pexclu[NrCells];     // starts at 0 pexclu[CellID] stores 0 not excluded, 1 excluded
+	Int_t exclu[NrCells];       // is the same as above
+	Int_t *pflag[NrCells][7];   // pflag[cellID][crit] = 1(ok),2(bad),0(bad)     start at 0 (cellID 0 = histobin 1)
+	Int_t flag[NrCells][7];     // is the same as above
+	Int_t bad[NrCells];
+	//..set all fields to -1
+	memset(newBC,-1, NrCells *sizeof(int));
+
+	Int_t CellID, nb1=0, nb2=0;
 	//INIT
-	TString output, bilan;
-	output.Form("BadChannelOutput/Criterum%d_Emin-%.2f_Emax-%.2f.txt",criterum,Emin,Emax);
-	for(i=0;i<NrCells;i++)
+	TString output, bilan, PdfName;
+	for(CellID=0;CellID<NrCells;CellID++)
 	{
-		exclu[i] =0;
-		pexclu[i]=&exclu[i];
+		exclu[CellID] =0;
+		pexclu[CellID]=&exclu[CellID];
 		for(Int_t j=0;j<7;j++)
 		{
-			flag[i][j] =1;
-			pflag[i][j]=&flag[i][j];
+			flag[CellID][j] =1;
+			pflag[CellID][j]=&flag[CellID][j];
 		}
 	}
 	//..Side note [x][y=0] is never used as there is no criterium 0
@@ -833,161 +853,135 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	//.. 1) Average energy per hit;
 	//.. 2) Average hit per event;
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-	cout<<"o o o Analyze cell distributions o o o"<<endl;
+	if(criterum < 6)cout<<"o o o Analyze average cell distributions o o o"<<endl;
 	//..For case 1 or 2
 	if (criterum < 3)      TestCellEandN(pflag, Emin, Emax,Nsigma);
 	//..For case 3, 4 or 5
 	else if (criterum < 6) TestCellShapes(pflag, Emin, Emax, Nsigma);
 
 
-	//RESULTS
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//.. RESULTS
+	//.. 1) Print the bad cells
+	//..    and write the results to a file
+	//.. 2) Kill cells function...
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	if(criterum < 6)
 	{
-		nb=0;
-		cout<<"    o bad cells by lower value (for cell E between "<<Emin<<"-"<<Emax<<")"<<endl;
-		cout<<"      ";
-		for(i=0;i<NrCells;i++)
-		{
-			if(flag[i][criterum]==0 && exclu[i]==0)
-			{
-				nb++;
-				cout<<i<<",";
-			}
-		}
-		cout<<"("<<nb<<")"<<endl;
-		nb=0;
-		cout<<"    o bad cells by lower value (for cell E between "<<Emin<<"-"<<Emax<<")"<<endl;
-		cout<<"      ";
-		for(i=0;i<NrCells;i++)
-		{
-			if(flag[i][criterum]==2 && exclu[i]==0)
-			{
-				nb++;
-				cout<<i<<",";
-			}
-		}
-		cout<<"("<<nb<<")"<<endl;
-		nb=0;
-		cout<<"    o Total number of bad cells "<<endl;
-		for(i=0;i<NrCells;i++)
-		{
-			if(flag[i][criterum]!=1 && exclu[i]==0)
-			{
-				newBC[nb]=i;
-				nb++;
-			}
-		}
-		cout<<"      ("<<nb<<")"<<endl;
-
-
-
-
-		//create a filtered file
-		KillCells(newBC,nb) ; nb=0;
-
-		//write in a file the results
+		//..Print the results on the screen and
+		//..write the results in a file
+		output.Form("BadChannelOutput/Criterion%d_Emin-%.2f_Emax-%.2f.txt",criterum,Emin,Emax);
 		ofstream file(output, ios::out | ios::trunc);
-		if(file)
+		if(!file)
 		{
-			file <<"criterum : "<<criterum<<", Emin = "<<Emin<<" GeV"<<", Emax = "<<Emax<<" GeV"<<endl;
-			file<<"bad by lower value : "<<endl;
-			for(i=0;i<NrCells;i++)
-			{
-				if(flag[i][criterum]==0 && exclu[i]==0)
-				{
-					nb++;
-					file<<i<<", " ;
-				}
-			}
-			file<<"("<<nb<<")"<<endl; nb=0;
-			file<<"bad by higher value : "<<endl;
-			for(i=0;i<NrCells;i++)
-			{
-				if(flag[i][criterum]==2 && exclu[i]==0)
-				{
-					nb++;
-					file<<i<<", " ;
-				}
-			}
-			file<<"("<<nb<<")"<<endl; nb=0;
-			file<<"total bad "<<endl;
-			for(i=0;i<NrCells;i++)
-			{
-				if(flag[i][criterum]!=1 && exclu[i]==0)
-				{
-					newBC[nb]=i;
-					nb++;
-					file<<i<<", " ;
-				}
-			}
-			file<<"("<<nb<<")"<<endl;
-			file.close();
+			cout<<"#### Major Error. Check the textfile!"<<endl;
 		}
-		else  cerr << "opening error" << endl;
+		file<<"Criterion : "<<criterum<<", Emin = "<<Emin<<" GeV"<<", Emax = "<<Emax<<" GeV"<<endl;
+		file<<"Bad by lower value : "<<endl;
+		cout<<"    o bad cells by lower value (for cell E between "<<Emin<<"-"<<Emax<<")"<<endl;
+		cout<<"      ";
+		nb1=0;
+		for(CellID=0;CellID<NrCells;CellID++)
+		{
+			if(flag[CellID][criterum]==0 && exclu[CellID]==0)
+			{
+				newBC[nb1]=CellID;
+				nb1++;
+				file<<CellID<<", ";
+				cout<<CellID<<",";
+			}
+		}
+		file<<"("<<nb1<<")"<<endl;
+		cout<<"("<<nb1<<")"<<endl;
+		file<<"Bad by higher value : "<<endl;
+		cout<<"    o bad cells by higher value (for cell E between "<<Emin<<"-"<<Emax<<")"<<endl;
+		cout<<"      ";
+		nb2=0;
+		for(CellID=0;CellID<NrCells;CellID++)
+		{
+			if(flag[CellID][criterum]==2 && exclu[CellID]==0)
+			{
+				newBC[nb1+nb2]=CellID;
+				nb2++;
+				file<<CellID<<", ";
+				cout<<CellID<<",";
+			}
+		}
+		file<<"("<<nb2<<")"<<endl;
+		cout<<"("<<nb2<<")"<<endl;
+
+		file<<"Total number of bad cells"<<endl;
+		file<<"("<<nb1+nb2<<")"<<endl;
+		file.close();
+		cout<<"    o Total number of bad cells "<<endl;
+		cout<<"      ("<<nb1+nb2<<")"<<endl;
+
+		//..create a filtered file
+		KillCells(newBC,nb1+nb2) ;
 	}
 
-	// if(criterum < 7){
-	//   cout<<"Excluded/dead cells : "<<endl;
-	//   for(i=0;i<23040;i++) {if(exclu[i]!=0) {cout<<i<<", " ; nb++;}}
-	//   cout<<"("<<nb<<")"<<endl; nb=0;}
-	//..This is the final part
-	//CRITERUM 7 : FINAL RESULT
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+	//.. CRITERUM 7 : FINAL RESULT
+	//.. 1) summarize all dead and bad cells in a text file
+	//.. 2) plot all bad cell E distributions in a .pdf file
+	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	if(criterum ==7)
 	{
-		nb =0;
-		bilan = Form("BadChannelOutput/%s%sBC0Test%i.txt",period.Data(),pass.Data(),trial); ;
-
+	    PdfName = Form("BadChannelOutput/%s%sBC_SummaryResults_V%i.pdf",period.Data(),pass.Data(),trial);
+		bilan   = Form("BadChannelOutput/%s%sBC_SummaryResults_V%i.txt",period.Data(),pass.Data(),trial); ;
 		cout<<"    o Final results o "<<endl;
-		cout<<"    o Open file: "<<bilan<<endl;
-
+		cout<<"    o write results into file: "<<bilan<<endl;
 		ofstream file(bilan, ios::out | ios::trunc);
 		if(file)
 		{
 			file<<"Dead cells : "<<endl;
-			cout<<"Dead cells : "<<endl;
-			for(i=0;i<NrCells;i++)
+			cout<<"    o Dead cells : "<<endl;
+			nb1 =0;
+			for(CellID=0; CellID<NrCells; CellID++)
 			{
-				//if(exclu[i]!=0) {file<<i<<", " ; cout<<i<<", " ; nb++;}}
-				if(exclu[i]!=0)
+				if(exclu[CellID]!=0)
 				{
-					file<<i<<"\n" ; cout<<i<<", " ; nb++;
+					file<<CellID<<"\n" ;
+					cout<<CellID<<"," ;
+					nb1++;
 				}
 			}
-			// file<<i<<"\n" ; cout<<i<<", " ; nb++;}
-			file<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl; nb=0;
+			file<<"("<<nb1<<")"<<endl;
+			cout<<"("<<nb1<<")"<<endl;
 
-			TFile::Open("filter.root");
+			TFile::Open("ConvertOutput/filter.root");
 			ExcludeCells(pexclu,NrCells);
-			file<<"Bad cells : "<<endl; cout<<"Bad cells : "<<endl;
-			for(i=0;i<NrCells;i++)
+			file<<"Bad cells (dead+excluded): "<<endl;
+			cout<<"    o Total number of bad cells (dead+excluded): "<<endl;
+			nb1=0;
+			for(CellID=0;CellID<NrCells;CellID++)
 			{
-				//	if(exclu[i]!=0) {bad[nb]=i; file<<i<<", " ; cout<<i<<", " ;
-				if(exclu[i]!=0)
+				if(exclu[CellID]!=0)
 				{
-					bad[nb]=i; file<<i<<"\n" ; cout<<i<<", " ;
-					nb++;
-					//if(nb==999){ cout<<"TO MUCH BAD CELLS"<<endl ; break;}
+					bad[nb1]=CellID;
+					newBC[nb1]=CellID;
+					file<<CellID<<"\n" ;
+					cout<<CellID<<"," ;
+					nb1++;
 				}
 			}
-			file<<"("<<nb<<")"<<endl; cout<<"("<<nb<<")"<<endl;
+			file<<"("<<nb1<<")"<<endl;
+			cout<<"("<<nb1<<")"<<endl;
 		}
-		cout<<"2tets"<<endl;
 		file.close();
-		cout<<"3tets"<<endl;
 
 		if(Infilefile!="none")
-			//if(Infilefile)
 		{
-			cout<<"4tets"<<endl;
-
+			cout<<"    o Open original file: "<<Infilefile<<endl;
 			TFile::Open(Infilefile);
 			Int_t c;
-			cout<<"nb"<<nb<<endl;
-			for(Int_t w=0; (w*9)<=nb; w++)
+			//..loop over the bad cells in backages of 9
+			cout<<"    o Save the bad channel spectra to a .pdf file"<<endl;
+			for(Int_t w=0; (w*9)<=nb1; w++)
 			{
-				if(9<=(nb-w*9)) c = 9 ;
-				else c = nb-9*w ;
-				Draw(bad, w*9, c,period,pass,trial) ;
+				if(9<=(nb1-w*9)) c = 9 ;
+				else c = nb1-9*w ;
+				SaveBadCellsToPDF(bad, w*9, c,PdfName) ;
 			}
 		}
 	}
@@ -1011,17 +1005,17 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 	{
 		TFile::Open(file);
 		PeriodAnalysis(2, 4.,0.2,0.5,period,pass,trial); // nb ent emin emax
-		TFile::Open("filter.root");
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(2, 4.,0.5, 1.,period,pass,trial); // nb ent emin emax
-		TFile::Open("filter.root");
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(1, 6.,0.5, 1.,period,pass,trial); // energy mea emin emax
-		TFile::Open("filter.root");
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(2, 4., 1., 2.,period,pass,trial); // nb ent emin emax
-		TFile::Open("filter.root");
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(1, 6., 1., 2.,period,pass,trial); // energy mea emin emax
-		TFile::Open("filter.root");
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(2, 4., 1.,10.,period,pass,trial); //nb ent emin emax
-		TFile::Open("filter.root");
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(1, 6., 1.,10.,period,pass,trial); //energy mea emin emax
 	}
 	else
@@ -1032,21 +1026,20 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 		//..low energies 0.5-2
 		TFile::Open(file);
 		PeriodAnalysis(2, 6.,0.5, 2.,period,pass,trial); // nb ent emin emax
-		TFile::Open("filter.root");
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(1, 6.,0.5, 2.,period,pass,trial); // energy mea emin emax
 		//..mid energies
-        TFile::Open("filter.root");
+        TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(2, 6., 2., 5.,period,pass,trial); // nb ent emin emax
-		TFile::Open("filter.root");
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(1, 6., 2., 5.,period,pass,trial); // energy mea emin emax
 		//..high energies
-/*ELI this is not working properly because ther is no gaussian in fact
- but and exponential tail
- 		TFile::Open("filter.root");
+		/*ELI this is not working properly
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(2, 6., 5.,10.,period,pass,trial); // nb ent emin emax
-		TFile::Open("filter.root");
+		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(1, 6., 5.,10.,period,pass,trial); // energy mea emin emax
-*/
+		*/
 	}
 	//provide dead cells list from original file and draw bad cells candidate from indicated file
 	TFile::Open(file);
@@ -1058,26 +1051,33 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 //________________________________________________________________________
 void BadChannelAnalysis()
 {
-	cout<<"Error need input arguments! Try:"<<endl;
+	cout<<"Error needs input arguments! Try:"<<endl;
 	cout<<".x BadChannelAnalysis.C(''LHC16h'',''muon_caloLego'',''AnyINT'')"<<endl;
 }
 //_________________________________________________________________________
 //________________________________________________________________________
-void BadChannelAnalysis(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default",Int_t trial=0)
+void BadChannelAnalysis(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default", TString ExternalFile= "", Int_t trial=0)
 {
-
-	// run by .x BadChannelAnalysis.C("LHC16h","muon_caloLego","AnyINT")
 	//..First use Convert() to merge historgrams from a runlist .txt file
     //..The merged outputfile contains 3 different histograms
 	//..In a second step analyse these merged histograms
 	//..by calling BCAnalysis()
 	TString inputfile;
 
-	cout<<". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."<<endl;
-	cout<<". . .Start process by converting files. . . . . . . . . . . ."<<endl;
-	cout<<endl;
-	inputfile = Convert(period, pass, trigger);
-	cout<<endl;
+	if(ExternalFile=="")
+	{
+		cout<<". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."<<endl;
+		cout<<". . .Start process by converting files. . . . . . . . . . . ."<<endl;
+		cout<<endl;
+		inputfile = Convert(period, pass, trigger);
+		cout<<endl;
+	}
+	else
+	{
+		inputfile="ConvertOutput/";
+		inputfile+=ExternalFile;
+	}
+
 	cout<<". . .Load inputfile with name: "<<inputfile<<" . . . . . . . ."<<endl;
 	cout<<". . .Continue process by . . . . . . . . . . . ."<<endl;
 	//inputfile="LHC15omuon_caloLegoRunlist0New.root";
