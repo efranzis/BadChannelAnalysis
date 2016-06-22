@@ -74,6 +74,7 @@
 #include <TGridResult.h>
 #include <TClonesArray.h>
 #include <TObjString.h>
+//#include "AliCalorimeterUtils.h"
 #include <TLatex.h>
 #include <stdio.h>
 #include <fstream>
@@ -84,6 +85,35 @@
 #endif
 using namespace std;
 
+//___________________________________________________________________________________________________
+/*//copied from AliCalorimeterUtils
+Int_t GetModuleNumberCellIndexesAbsCaloMap(Int_t absId, Int_t calo,Int_t & icol   , Int_t & irow,
+										  Int_t & iRCU,Int_t & icolAbs, Int_t & irowAbs)
+{
+	Int_t imod = GetModuleNumberCellIndexes(absId, calo, icol, irow,iRCU);
+
+	icolAbs = icol;
+	irowAbs = irow;
+	//
+	// EMCal/DCal
+	//
+	// Shift collumns in even SM
+	Int_t shiftEta = 48;
+
+	// Shift collumn even more due to smaller acceptance of DCal collumns
+	if ( imod >  11 && imod < 18) shiftEta+=48/3;
+
+	icolAbs = (imod % 2) ? icol + shiftEta : icol;
+
+	//
+	// Shift rows per sector
+	irowAbs = irow + 24 * Int_t(imod / 2);
+
+	// Shift row less due to smaller acceptance of SM 10 and 11 to count DCal rows
+	if ( imod >  11 && imod < 20) irowAbs -= (2*24 / 3);
+
+	return imod ;
+}*/
 void Draw2(Int_t cell, Int_t cellref=400)
 {
     //ELI not used anywhere
@@ -382,7 +412,16 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	Int_t fNMaxCols = 48;  //eta direction
 	Int_t fNMaxRows = 24;  //phi direction
 	Int_t fNMaxColsAbs=2*fNMaxCols;
-	Int_t fNMaxRowsAbs=Int_t (20/2)*fNMaxRows; //multiply by number of supermodules
+	Int_t fNMaxRowsAbs=Int_t (20/2)*fNMaxRows; //multiply by number of supermodules (20)
+    Int_t CellColumn=0,CellRow=0;
+	//..load necessary libraries
+ /*   AliCalorimeterUtils* fCaloUtils = new AliCalorimeterUtils();
+	fCaloUtils->AccessGeometry(InputEvent()); // InputEvent()->GetRunNumber()
+	//..Set the AODB calibration, bad channels etc. parameters at least once
+	fCaloUtils->AccessOADB(InputEvent());
+	//..apparently not initialized correctly like eg in AliEMCALGeometry!
+	fCaloUtils->SetNumberOfSuperModulesUsed(20);
+*/
 
 	TString HistoName=inhisto->GetName();
 	Double_t goodmax= 0. ;
@@ -411,6 +450,18 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	Plot2D->GetXaxis()->SetTitle("cell column (#eta direction)");
 	Plot2D->GetYaxis()->SetTitle("cell row (#phi direction)");
 
+	for (Int_t c = 1; c <= inhisto->GetNbinsX(); c++)
+	{
+		//..Get Row and Collumn for cell ID c
+		/*fCaloUtils->GetModuleNumberCellIndexesAbsCaloMap(c-1,0,CellColumn,CellRow,iRCU,icolAbs,irowAbs);
+	if(icolAbs> fNMaxColsAbs || irowAbs>fNMaxRowsAbs)
+	{
+		cout<<"Problem! wrong calculated number of max col and max rows"<<endl;
+		cout<<"current col: "<<icolAbs<<", max col"<<fNMaxColsAbs<<endl;
+		cout<<"current row: "<<irowAbs<<", max row"<<fNMaxRowsAbs<<endl;
+	}*/
+		Plot2D->SetBinContent(CellColumn,CellRow,inhisto->GetBinContent(c));
+	}
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	//. . .draw histogram + distribution
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -541,7 +592,7 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	for(Int_t c = 1; c <= *pflag[1][0]; c++)
 	{
 		cel=(Int_t)(inhisto->GetBinLowEdge(c)+0.1);  //ELI what does that 0.1 stand for?
-		//cel=0 - c=1, cel=1 - c=2
+		//cel=0 and c=1, cel=1 and c=2
 		if (inhisto->GetBinContent(c) <= goodmin)
 		{
 			*pflag[cel][crit]=0;
