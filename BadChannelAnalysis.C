@@ -1010,12 +1010,12 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 				SaveBadCellsToPDF(newDC, w*9, c,DeadPdfName);
 			}*/
 			cout<<"    o Save the bad channel spectra to a .pdf file"<<endl;
-/*			for(Int_t w=0; (w*9)<nb2; w++)
+			for(Int_t w=0; (w*9)<nb2; w++)
 			{
 				if(9<=(nb2-w*9)) c = 9 ;
 				else c = nb2-9*w ;
 				SaveBadCellsToPDF(newBC, w*9, c,BadPdfName) ;
-			}*/
+			}
 		}
 	}
 
