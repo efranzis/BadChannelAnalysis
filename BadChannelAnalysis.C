@@ -139,21 +139,20 @@ void SaveBadCellsToPDF(Int_t cell[], Int_t iBC, Int_t nBC, TString PdfName, cons
 	gStyle->SetFillColor(kWhite);
 	gStyle->SetTitleFillColor(kWhite);
 	gStyle->SetPalette(1);
-	char out[120];
+	//char out[120];
 	char title[100];
 	char name[100];
-	if(cell[iBC]==-1)cout<<"### strange shouldn't happen 1"<<endl;
+	if(cell[iBC]==-1)cout<<"### strange shouldn't happen 1, cell id: "<<iBC<<endl;
 	if(cell[iBC+nBC-1]==-1)cout<<"### strange shouldn't happen 2"<<endl;
 
 	TString slide     = Form("Cells %d-%d",cell[iBC],cell[iBC+nBC-1]);
     TString reflegend = Form("reference Cell %i",cellref);
-	sprintf(out,"%d-%d.gif",cell[iBC],cell[iBC+nBC-1]);
+	//sprintf(out,"%d-%d.gif",cell[iBC],cell[iBC+nBC-1]);
 
 	TH2 *hCellAmplitude = (TH2*) gFile->Get("hCellAmplitude");
 	TH1 *hCellref = hCellAmplitude->ProjectionX("badcells",cellref+1,cellref+1);
 
 	TCanvas *c1 = new TCanvas("badcells","badcells",1000,750);
-	//c1->SetLogy();
 	if(nBC > 6) c1->Divide(3,3);
 	else if (nBC > 3)  c1->Divide(3,2);
 	else  c1->Divide(3,1);
@@ -203,11 +202,10 @@ void SaveBadCellsToPDF(Int_t cell[], Int_t iBC, Int_t nBC, TString PdfName, cons
 	}
 	else  c1->Print(PdfName.Data());
 
-	delete hCellref ;
-	delete c1 ;
-	delete leg ;
+	delete hCellref;
+	delete c1;
+	delete leg;
 }
-
 //_________________________________________________________________________
 //_________________________________________________________________________
 TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString trigger= "default")
@@ -380,6 +378,12 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	if(crit==1)cout<<"    o Fit average energy per hit distribution"<<endl;
 	if(crit==2)cout<<"    o Fit average hit per event distribution"<<endl;
 
+	//..setings for the 2D histogram
+	Int_t fNMaxCols = 48;  //eta direction
+	Int_t fNMaxRows = 24;  //phi direction
+	Int_t fNMaxColsAbs=2*fNMaxCols;
+	Int_t fNMaxRowsAbs=Int_t (20/2)*fNMaxRows; //multiply by number of supermodules
+
 	TString HistoName=inhisto->GetName();
 	Double_t goodmax= 0. ;
 	Double_t goodmin= 0. ;
@@ -402,23 +406,42 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	{
 		distrib->Fill(inhisto->GetBinContent(c));
 	}
+	//..build two dimensional histogram with values row vs. column
+	TH2F *Plot2D = new TH2F(Form("%s_HitRowColumn",(const char*)HistoName),Form("%s_HitRowColumn",(const char*)HistoName),fNMaxColsAbs+2,-1.5,fNMaxColsAbs+0.5, fNMaxRowsAbs+2,-1.5,fNMaxRowsAbs+0.5);
+	Plot2D->GetXaxis()->SetTitle("cell column (#eta direction)");
+	Plot2D->GetYaxis()->SetTitle("cell row (#phi direction)");
+
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	//. . .draw histogram + distribution
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-	TCanvas *c1 = new TCanvas(HistoName,HistoName, 800,400);
-	c1->Divide(2,1);
 
-	c1->cd(1);
-	gPad->SetLeftMargin(0.14);
-	gPad->SetRightMargin(0.06);
-	gPad->SetLogy();
-	inhisto->SetTitleOffset(1.7,"Y");
+	//Produ
+	TCanvas *c1 = new TCanvas(HistoName,HistoName,900,900);
+	c1->ToggleEventStatus();
+	TPad*    upperPad    = new TPad("upperPad", "upperPad",.005, .5, .995, .995);
+	TPad*    lowerPadLeft = new TPad("lowerPadL", "lowerPadL",.005, .005, .5, .5);
+	TPad*    lowerPadRight = new TPad("lowerPadR", "lowerPadR",.5, .005, .995, .5);
+	upperPad->Draw();
+	lowerPadLeft->Draw();
+	lowerPadRight->Draw();
+
+	upperPad->cd();
+	upperPad->SetLeftMargin(0.045);
+	upperPad->SetRightMargin(0.03);
+	upperPad->SetLogy();
+	inhisto->SetTitleOffset(0.6,"Y");
+	inhisto->GetXaxis()->SetRangeUser(0,17000);
 	inhisto->Draw();
 
-	c1->cd(2);
-	gPad->SetLeftMargin(0.14);
-	gPad->SetRightMargin(0.10);
-	gPad->SetLogy();
+	lowerPadRight->cd();
+	lowerPadRight->SetLeftMargin(0.09);
+	lowerPadRight->SetRightMargin(0.06);
+	Plot2D->Draw("colz");
+
+	lowerPadLeft->cd();
+	lowerPadLeft->SetLeftMargin(0.09);
+	lowerPadLeft->SetRightMargin(0.06);
+	lowerPadLeft->SetLogy();
 	distrib->Draw();
 
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -471,12 +494,12 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	//. . .Add info to histogram
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	TLine *lline = new TLine(goodmin, 0, goodmin, distrib->GetMaximum());
-	lline->SetLineColor(kOrange);
+	lline->SetLineColor(kGreen+2);
 	lline->SetLineStyle(7);
 	lline->Draw();
 
 	TLine *rline = new TLine(goodmax, 0, goodmax, distrib->GetMaximum());
-	rline->SetLineColor(kOrange);
+	rline->SetLineColor(kGreen+2);
 	rline->SetLineStyle(7);
 	rline->Draw();
 
@@ -741,7 +764,7 @@ void ExcludeCells(Int_t *pexclu[23040], Int_t NrCells)
 		if(Nsum >= 0.5 && Nsum < 1)cout<<"-----------------------small but non zero!!!!"<<endl;
 		if(Nsum < 0.5 && Nsum != 0)cout<<"-----------------------non zero!!!!"<<endl;
 
-		if(Nsum < 0.5)
+		if(Nsum < 0.5 && *pexclu[c-1]!=5)
 		{
 			//..histogram bin=cellID+1
 			*pexclu[c-1]=1;
@@ -804,24 +827,25 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	// 5 : B parameter (from fit of each cell Amplitude between Emin and Emax)
 	// 6 :
 	// 7 : give bad + dead list
-	//ELI right now for testing!!4000
-    static const Int_t NrCells=16900;//17665;//23040;  //ELI this is in fact a very important number!!
+	//ELI Number of cells - (24*48)  16 full modules and 4 1/3 modules == 19,968 check that number!!
+    static const Int_t NrCells=19968; //17665;//23040;  //ELI this is in fact a very important number!!
 
     //ELI a comment about the array positions
     //..In the histogram: bin 1= cellID 0, bin 2= cellID 1 etc
     //..In the arrays: array[cellID]= some information
     Int_t newBC[NrCells];       // starts at newBC[0] stores cellIDs  (cellID = bin-1)
+    Int_t newDC[NrCells];       // starts at newDC[0] stores cellIDs  (cellID = bin-1)
 	Int_t *pexclu[NrCells];     // starts at 0 pexclu[CellID] stores 0 not excluded, 1 excluded
 	Int_t exclu[NrCells];       // is the same as above
 	Int_t *pflag[NrCells][7];   // pflag[cellID][crit] = 1(ok),2(bad),0(bad)     start at 0 (cellID 0 = histobin 1)
 	Int_t flag[NrCells][7];     // is the same as above
-	Int_t bad[NrCells];
 	//..set all fields to -1
 	memset(newBC,-1, NrCells *sizeof(int));
+	memset(newDC,-1, NrCells *sizeof(int));
 
 	Int_t CellID, nb1=0, nb2=0;
 	//INIT
-	TString output, bilan, PdfName;
+	TString output, bilan, DeadPdfName, BadPdfName;
 	for(CellID=0;CellID<NrCells;CellID++)
 	{
 		exclu[CellID] =0;
@@ -927,7 +951,8 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	if(criterum ==7)
 	{
-	    PdfName = Form("BadChannelOutput/%s%sBC_SummaryResults_V%i.pdf",period.Data(),pass.Data(),trial);
+	    DeadPdfName = Form("BadChannelOutput/%s%sDC_SummaryResults_V%i.pdf",period.Data(),pass.Data(),trial);
+	    BadPdfName  = Form("BadChannelOutput/%s%sBC_SummaryResults_V%i.pdf",period.Data(),pass.Data(),trial);
 		bilan   = Form("BadChannelOutput/%s%sBC_SummaryResults_V%i.txt",period.Data(),pass.Data(),trial); ;
 		cout<<"    o Final results o "<<endl;
 		cout<<"    o write results into file: "<<bilan<<endl;
@@ -939,10 +964,12 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 			nb1 =0;
 			for(CellID=0; CellID<NrCells; CellID++)
 			{
-				if(exclu[CellID]!=0)
+				if(exclu[CellID]==1)
 				{
+					newDC[nb1]=CellID;
 					file<<CellID<<"\n" ;
 					cout<<CellID<<"," ;
+					exclu[CellID]=5;
 					nb1++;
 				}
 			}
@@ -951,22 +978,21 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 
 			TFile::Open("ConvertOutput/filter.root");
 			ExcludeCells(pexclu,NrCells);
-			file<<"Bad cells (dead+excluded): "<<endl;
-			cout<<"    o Total number of bad cells (dead+excluded): "<<endl;
-			nb1=0;
+			file<<"Bad cells (excluded): "<<endl;
+			cout<<"    o Total number of bad cells (excluded): "<<endl;
+			nb2=0;
 			for(CellID=0;CellID<NrCells;CellID++)
 			{
-				if(exclu[CellID]!=0)
+				if(exclu[CellID]==1)
 				{
-					bad[nb1]=CellID;
-					newBC[nb1]=CellID;
+					newBC[nb2]=CellID;
 					file<<CellID<<"\n" ;
 					cout<<CellID<<"," ;
-					nb1++;
+					nb2++;
 				}
 			}
-			file<<"("<<nb1<<")"<<endl;
-			cout<<"("<<nb1<<")"<<endl;
+			file<<"("<<nb2<<")"<<endl;
+			cout<<"("<<nb2<<")"<<endl;
 		}
 		file.close();
 
@@ -975,14 +1001,21 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 			cout<<"    o Open original file: "<<Infilefile<<endl;
 			TFile::Open(Infilefile);
 			Int_t c;
-			//..loop over the bad cells in backages of 9
-			cout<<"    o Save the bad channel spectra to a .pdf file"<<endl;
-			for(Int_t w=0; (w*9)<=nb1; w++)
+			//..loop over the bad cells in packages of 9
+			/*cout<<"    o Save the Dead channel spectra to a .pdf file"<<endl;
+			for(Int_t w=0; (w*9)<nb1; w++)
 			{
 				if(9<=(nb1-w*9)) c = 9 ;
 				else c = nb1-9*w ;
-				SaveBadCellsToPDF(bad, w*9, c,PdfName) ;
-			}
+				SaveBadCellsToPDF(newDC, w*9, c,DeadPdfName);
+			}*/
+			cout<<"    o Save the bad channel spectra to a .pdf file"<<endl;
+/*			for(Int_t w=0; (w*9)<nb2; w++)
+			{
+				if(9<=(nb2-w*9)) c = 9 ;
+				else c = nb2-9*w ;
+				SaveBadCellsToPDF(newBC, w*9, c,BadPdfName) ;
+			}*/
 		}
 	}
 
