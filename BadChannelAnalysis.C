@@ -1003,7 +1003,7 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	{
 
 		DeadPdfName = Form("%s/%s%sDC_SummaryResults_V%i.pdf", outPath.Data(), period.Data(), pass.Data(), trial);
-	    PdfName = Form("%s/%s%sBC_SummaryResults_V%i.pdf", outPath.Data(), period.Data(), pass.Data(), trial);
+	    BadPdfName = Form("%s/%s%sBC_SummaryResults_V%i.pdf", outPath.Data(), period.Data(), pass.Data(), trial);
 		bilan   = Form("%s/%s%sBC_SummaryResults_V%i.txt", outPath.Data(), period.Data(), pass.Data(), trial); ;
 		cout<<"    o Final results o "<<endl;
 		cout<<"    o write results into file: "<<bilan<<endl;
