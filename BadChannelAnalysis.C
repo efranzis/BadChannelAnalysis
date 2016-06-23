@@ -58,22 +58,15 @@
 #include <TFile.h>
 #include <TH1F.h>
 #include <TH2F.h>
-#include <TH3D.h>
+#include <TF1.h>
+#include <TROOT.h>
 #include <TLine.h>
 #include <Riostream.h>
 #include <TCanvas.h>
-#include <TGraphErrors.h>
-#include <TGrid.h>
 #include <TStyle.h>
-#include <TFileMerger.h>
-#include <TMultiGraph.h>
-#include <TROOT.h>
+#include <TSystem.h>
 #include <TLegend.h>
 #include <TString.h>
-#include <TGridCollection.h>
-#include <TGridResult.h>
-#include <TClonesArray.h>
-#include <TObjString.h>
 //#include "AliCalorimeterUtils.h"
 #include <TLatex.h>
 #include <stdio.h>
@@ -238,7 +231,7 @@ void SaveBadCellsToPDF(Int_t cell[], Int_t iBC, Int_t nBC, TString PdfName, cons
 }
 //_________________________________________________________________________
 //_________________________________________________________________________
-TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString trigger= "default")
+TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString trigger= "default", TString runlistFileName = "runList.txt", TString inputPath = "AnalysisInput", TString outPath = "ConvertOutput")
 {
 	//parameters for folder sturcture: period, pass
 	//parameter very important for file name: trigger
@@ -257,7 +250,7 @@ TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString t
     TH2F *hCellTime               = new TH2F("hCellTime","Cell Time",250,-275,975,23040,0,23040);
 
     //..Open the text file with the run list numbers and run index
-    /*ELI*/TString file = Form("AnalysisInput/%s/%s/runList.txt",period.Data(),pass.Data());
+    /*ELI*/TString file = Form("%s/%s/%s/%s", inputPath.Data(), period.Data(), pass.Data(), runlistFileName.Data());
     cout<<"o o o Open .txt file with run indices. Name = " << file << endl;
     FILE *pFile = fopen(file.Data(), "r");
     if(!pFile)cout<<"count't open file!"<<endl;
@@ -279,7 +272,10 @@ TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString t
 	//..Open the different .root files with help of the run numbers from the text file
 	const Int_t nRun = nlines ;
 	TString base;
-	TString BCfile= Form("ConvertOutput/%s%sRunlist0New.root",period.Data(),pass.Data());
+	
+	gSystem->mkdir(outPath);
+	
+	TString BCfile= Form("%s/%s%sConverted.root", outPath.Data(), period.Data(),pass.Data());
 
 	TString direct(Form("CaloQA_%s",trigger.Data()));
 	TString infile;
@@ -288,7 +284,7 @@ TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString t
 	//..loop over the amount of run numbers found in the previous text file.
 	for(Int_t i = 0 ; i < nRun ; i++)
 	{
-		base  = Form("AnalysisInput/%s/%s/%d",period.Data(),pass.Data(),RunId[i]);
+		base  = Form("%s/%s/%s/%d", inputPath.Data(), period.Data(), pass.Data(), RunId[i]);
 
 		// ICI on met le nom period/pass/runblabla.root
 		if ((pass=="cpass1_pass2")||(pass=="cpass1-2"))
@@ -310,7 +306,7 @@ TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString t
 		cout<<"    o Open .root file with name: "<<infile<<endl;
 		TFile *f = TFile::Open(infile);
 
-		base=Form("%s/%s",base.Data(),trigger.Data());
+		//base=Form("%s/%s",base.Data(),trigger.Data()); //CHIARA: why changing the variable base and then not using it?
 		//..Do some basic checks
 		if(!f)
 		{
@@ -392,7 +388,7 @@ TString Convert(TString period = "LHC11h", TString pass = "pass1_HLT", TString t
 //_________________________________________________________________________
 //_________________________________________________________________________
 
-void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t dnbins = 200, Double_t dmaxval = -1.)
+void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t dnbins = 200, Double_t dmaxval = -1., TString dirOut = "BadChannelOutput")
 {  
 	//  1) create a distribution for the input histogram;
 	//  2) fit the distribution with a gaussian
@@ -482,6 +478,7 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	upperPad->SetLogy();
 	inhisto->SetTitleOffset(0.6,"Y");
 	inhisto->GetXaxis()->SetRangeUser(0,17000);
+
 	inhisto->Draw();
 
 	lowerPadRight->cd();
@@ -562,9 +559,9 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	fit2->SetLineStyle(1);//7
 	fit2->Draw("same");
 
-	TLatex* text;
-	if(crit==1)text=new TLatex(0.2,0.8,Form("Good range: %.2f-%.2f",goodmin,goodmax));
-	if(crit==2)text=new TLatex(0.2,0.8,Form("Good range: %.2f-%.2fx10^-5",goodmin*100000,goodmax*100000));
+	TLatex* text = 0x0;
+	if(crit==1) text = new TLatex(0.2,0.8,Form("Good range: %.2f-%.2f",goodmin,goodmax));
+	if(crit==2) text = new TLatex(0.2,0.8,Form("Good range: %.2f-%.2fx10^-5",goodmin*100000,goodmax*100000));
 	text->SetTextSize(0.06);
 	text->SetNDC();
 	text->SetTextColor(1);
@@ -574,9 +571,10 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	//. . .Save histogram
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	c1->Update();
-	TString name   =Form("BadChannelOutput/criteria-_%d.gif",crit);
-	if(crit==1)name=Form("BadChannelOutput/AverageEperHit_%s.gif",(const char*)HistoName);
-	if(crit==2)name=Form("BadChannelOutput/AverageHitperEvent_%s.gif",(const char*)HistoName);
+	gSystem->mkdir(dirOut);
+	TString name   =Form("%s/criteria-_%d.gif", dirOut.Data(), crit);
+	if(crit==1)name=Form("%s/AverageEperHit_%s.gif", dirOut.Data(), (const char*)HistoName);
+	if(crit==2)name=Form("%s/AverageHitperEvent_%s.gif", dirOut.Data(), (const char*)HistoName);
 	c1->SaveAs(name);
 
 
@@ -830,7 +828,7 @@ void ExcludeCells(Int_t *pexclu[23040], Int_t NrCells)
 
 //_________________________________________________________________________
 //_________________________________________________________________________
-void KillCells(Int_t filter[], Int_t nbc)
+void KillCells(Int_t filter[], Int_t nbc, TString outPath = "ConvertOutput")
 {
 	cout<<"    o Kill cells -> set bin content of "<<nbc<<" bad cells to 0 "<<endl;
 	// kill a cell : put its entry to 0
@@ -849,7 +847,8 @@ void KillCells(Int_t filter[], Int_t nbc)
 			hCellAmplitude->SetBinContent(amp,filter[i]+1,0);
 		}
 	}
-	TFile *tf = new TFile("ConvertOutput/filter.root","recreate");
+	gSystem->mkdir(outPath);
+	TFile *tf = new TFile(Form("%s/filter.root", outPath.Data()),"recreate");
 	hCellAmplitude->Write();
 	hNEventsProcessedPerRun->Write();
 	tf->Write();
@@ -859,7 +858,7 @@ void KillCells(Int_t filter[], Int_t nbc)
 }
 //_________________________________________________________________________
 //_________________________________________________________________________
-void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString Infilefile ="none")
+void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString Infilefile ="none", TString outPath = "ConvertOutput")
 {
 	cout<<""<<endl;
 	cout<<""<<endl;
@@ -945,7 +944,7 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	{
 		//..Print the results on the screen and
 		//..write the results in a file
-		output.Form("BadChannelOutput/Criterion%d_Emin-%.2f_Emax-%.2f.txt",criterum,Emin,Emax);
+		output.Form("%s/Criterion%d_Emin-%.2f_Emax-%.2f.txt", outPath.Data(), criterum,Emin,Emax);
 		ofstream file(output, ios::out | ios::trunc);
 		if(!file)
 		{
@@ -1002,9 +1001,10 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	if(criterum ==7)
 	{
-	    DeadPdfName = Form("BadChannelOutput/%s%sDC_SummaryResults_V%i.pdf",period.Data(),pass.Data(),trial);
-	    BadPdfName  = Form("BadChannelOutput/%s%sBC_SummaryResults_V%i.pdf",period.Data(),pass.Data(),trial);
-		bilan   = Form("BadChannelOutput/%s%sBC_SummaryResults_V%i.txt",period.Data(),pass.Data(),trial); ;
+
+		DeadPdfName = Form("%s/%s%sDC_SummaryResults_V%i.pdf", outPath.Data(), period.Data(), pass.Data(), trial);
+	    PdfName = Form("%s/%s%sBC_SummaryResults_V%i.pdf", outPath.Data(), period.Data(), pass.Data(), trial);
+		bilan   = Form("%s/%s%sBC_SummaryResults_V%i.txt", outPath.Data(), period.Data(), pass.Data(), trial); ;
 		cout<<"    o Final results o "<<endl;
 		cout<<"    o write results into file: "<<bilan<<endl;
 		ofstream file(bilan, ios::out | ios::trunc);
@@ -1027,7 +1027,7 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 			file<<"("<<nb1<<")"<<endl;
 			cout<<"("<<nb1<<")"<<endl;
 
-			TFile::Open("ConvertOutput/filter.root");
+			TFile::Open(Form("%s/filter.root", outPath.Data()));
 			ExcludeCells(pexclu,NrCells);
 			file<<"Bad cells (excluded): "<<endl;
 			cout<<"    o Total number of bad cells (excluded): "<<endl;
@@ -1087,7 +1087,11 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
     //..Default Configuration:
 	if(trigger=="default"||trigger=="INT7"||trigger=="DMC7"||trigger=="AnyINTnoBC")
 	{
-		TFile::Open(file);
+		TFile *fin = new TFile(file);
+		if(!fin->IsOpen()){
+			Printf("File %s not found", file.Data());
+			return;
+		}
 		PeriodAnalysis(2, 4.,0.2,0.5,period,pass,trial); // nb ent emin emax
 		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(2, 4.,0.5, 1.,period,pass,trial); // nb ent emin emax
@@ -1108,7 +1112,11 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 		//..PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, Double_t Emax=2.0, Int_t compteur = 1, TString period = "LHC15f", TString pass = "pass2", Int_t trial=0, TString Infilefile ="none"){
 		//..Criterium 1,2
 		//..low energies 0.5-2
-		TFile::Open(file);
+		TFile *fin = new TFile(file);
+		if(!fin->IsOpen()){
+			Printf("File %s not found", file.Data());
+			return;
+		}
 		PeriodAnalysis(2, 6.,0.5, 2.,period,pass,trial); // nb ent emin emax
 		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(1, 6.,0.5, 2.,period,pass,trial); // energy mea emin emax
@@ -1133,33 +1141,34 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 }
 //_________________________________________________________________________
 //________________________________________________________________________
-void BadChannelAnalysis()
-{
-	cout<<"Error needs input arguments! Try:"<<endl;
-	cout<<".x BadChannelAnalysis.C(''LHC16h'',''muon_caloLego'',''AnyINT'')"<<endl;
-}
+//void BadChannelAnalysis()
+//{
+//	cout<<"Error needs input arguments! Try:"<<endl;
+//	cout<<".x BadChannelAnalysis.C(''LHC16h'',''muon_caloLego'',''AnyINT'')"<<endl;
+//}
 //_________________________________________________________________________
 //________________________________________________________________________
-void BadChannelAnalysis(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default", TString ExternalFile= "", Int_t trial=0)
+void BadChannelAnalysis(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default", TString workingDir = "./", TString externalFile= "", Int_t trial=0)
 {
-	//..First use Convert() to merge historgrams from a runlist .txt file
-    //..The merged outputfile contains 3 different histograms
-	//..In a second step analyse these merged histograms
-	//..by calling BCAnalysis()
-	TString inputfile;
+	///..Define externalFile if the Conversion has already been performed, namely if a file named <period><pass>Converted.root already exists, by default in the directory ConvertOutput. externalFile must contain the full path and filename.
+	///..First use Convert() to merge historgrams from a runlist .txt file
+    ///..The merged outputfile contains 3 different histograms
+	///..In a second step analyse these merged histograms
+	///..by calling BCAnalysis()
+	TString inputfile = "";
 
-	if(ExternalFile=="")
+	if(externalFile=="")
 	{
 		cout<<". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."<<endl;
 		cout<<". . .Start process by converting files. . . . . . . . . . . ."<<endl;
 		cout<<endl;
-		inputfile = Convert(period, pass, trigger);
+		inputfile = Convert(period, pass, trigger, workingDir);
 		cout<<endl;
 	}
 	else
 	{
-		inputfile="ConvertOutput/";
-		inputfile+=ExternalFile;
+		//inputfile="ConvertOutput/";
+		inputfile+=externalFile;
 	}
 
 	cout<<". . .Load inputfile with name: "<<inputfile<<" . . . . . . . ."<<endl;
