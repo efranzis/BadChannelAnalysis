@@ -67,7 +67,8 @@
 #include <TSystem.h>
 #include <TLegend.h>
 #include <TString.h>
-//#include "AliCalorimeterUtils.h"
+#include <AliCalorimeterUtils.h>
+#include <AliAODEvent.h>
 #include <TLatex.h>
 #include <stdio.h>
 #include <fstream>
@@ -409,16 +410,30 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	Int_t fNMaxRows = 24;  //phi direction
 	Int_t fNMaxColsAbs=2*fNMaxCols;
 	Int_t fNMaxRowsAbs=Int_t (20/2)*fNMaxRows; //multiply by number of supermodules (20)
-    Int_t CellColumn=0,CellRow=0;
+	Int_t CellColumn=0,CellRow=0;
+	Int_t CellColumnAbs=0,CellRowAbs=0;
+	Int_t Trash;
 	//..load necessary libraries
- /*   AliCalorimeterUtils* fCaloUtils = new AliCalorimeterUtils();
-	fCaloUtils->AccessGeometry(InputEvent()); // InputEvent()->GetRunNumber()
-	//..Set the AODB calibration, bad channels etc. parameters at least once
-	fCaloUtils->AccessOADB(InputEvent());
-	//..apparently not initialized correctly like eg in AliEMCALGeometry!
-	fCaloUtils->SetNumberOfSuperModulesUsed(20);
-*/
+/*    AliCalorimeterUtils* fCaloUtils = new AliCalorimeterUtils();
+    //..AccessGeometry needs an input event to retrieve the run number, name, GetPHOSMatrix, GetEMCALMatrix
+	//..
+    cout<<"1"<<endl;
+    AliAODEvent* aod = new AliAODEvent();
+    cout<<"2"<<endl;
+    aod->SetRunNumber(254381); //will not work
+    cout<<"current run number: "<<aod->GetRunNumber()<<" , name: "<<aod->GetName()<<endl;
+    fCaloUtils->SetRunNumber(254381);
+    cout<<"3"<<endl;
+ //   fCaloUtils->AccessGeometry(aod); // InputEvent()->GetRunNumber()
+    //..Set the AODB calibration, bad channels etc. parameters at least once
+    cout<<"4"<<endl;
+    //    fCaloUtils->AccessOADB(aod);
+    //..apparently not initialized correctly like eg in AliEMCALGeometry!
+    cout<<"5"<<endl;
+    fCaloUtils->SetNumberOfSuperModulesUsed(20);
+    cout<<"6"<<endl;
 
+*/
 	TString HistoName=inhisto->GetName();
 	Double_t goodmax= 0. ;
 	Double_t goodmin= 0. ;
@@ -446,18 +461,20 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	Plot2D->GetXaxis()->SetTitle("cell column (#eta direction)");
 	Plot2D->GetYaxis()->SetTitle("cell row (#phi direction)");
 
-	for (Int_t c = 1; c <= inhisto->GetNbinsX(); c++)
+    /*
+    for (Int_t c = 1; c <= inhisto->GetNbinsX(); c++)
 	{
 		//..Get Row and Collumn for cell ID c
-		/*fCaloUtils->GetModuleNumberCellIndexesAbsCaloMap(c-1,0,CellColumn,CellRow,iRCU,icolAbs,irowAbs);
-	if(icolAbs> fNMaxColsAbs || irowAbs>fNMaxRowsAbs)
-	{
-		cout<<"Problem! wrong calculated number of max col and max rows"<<endl;
-		cout<<"current col: "<<icolAbs<<", max col"<<fNMaxColsAbs<<endl;
-		cout<<"current row: "<<irowAbs<<", max row"<<fNMaxRowsAbs<<endl;
-	}*/
+		fCaloUtils->GetModuleNumberCellIndexesAbsCaloMap(c-1,0,CellColumn,CellRow,Trash,CellColumnAbs,CellRowAbs);
+		if(CellColumnAbs> fNMaxColsAbs || CellRowAbs>fNMaxRowsAbs)
+		{
+			cout<<"Problem! wrong calculated number of max col and max rows"<<endl;
+			cout<<"current col: "<<CellColumnAbs<<", max col"<<fNMaxColsAbs<<endl;
+			cout<<"current row: "<<CellRowAbs<<", max row"<<fNMaxRowsAbs<<endl;
+		}
 		Plot2D->SetBinContent(CellColumn,CellRow,inhisto->GetBinContent(c));
 	}
+	*/
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	//. . .draw histogram + distribution
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -479,6 +496,7 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	inhisto->SetTitleOffset(0.6,"Y");
 	inhisto->GetXaxis()->SetRangeUser(0,17000);
 
+	inhisto->SetLineColor(kBlue+1);
 	inhisto->Draw();
 
 	lowerPadRight->cd();
@@ -490,6 +508,7 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	lowerPadLeft->SetLeftMargin(0.09);
 	lowerPadLeft->SetRightMargin(0.06);
 	lowerPadLeft->SetLogy();
+	distrib->SetLineColor(kBlue+1);
 	distrib->Draw();
 
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -1003,10 +1022,11 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	{
 
 		DeadPdfName = Form("%s/%s%sDC_SummaryResults_V%i.pdf", outPath.Data(), period.Data(), pass.Data(), trial);
-	    BadPdfName = Form("%s/%s%sBC_SummaryResults_V%i.pdf", outPath.Data(), period.Data(), pass.Data(), trial);
+	    BadPdfName  = Form("%s/%s%sBC_SummaryResults_V%i.pdf", outPath.Data(), period.Data(), pass.Data(), trial);
 		bilan   = Form("%s/%s%sBC_SummaryResults_V%i.txt", outPath.Data(), period.Data(), pass.Data(), trial); ;
 		cout<<"    o Final results o "<<endl;
-		cout<<"    o write results into file: "<<bilan<<endl;
+		cout<<"    o write results into .txt file: "<<bilan<<endl;
+		cout<<"    o write results into .pdf file: "<<BadPdfName<<endl;
 		ofstream file(bilan, ios::out | ios::trunc);
 		if(file)
 		{
@@ -1062,6 +1082,7 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 			}*/
 			cout<<"    o Save the bad channel spectra to a .pdf file"<<endl;
 			for(Int_t w=0; (w*9)<nb2; w++)
+			//for(Int_t w=0; (w*9)<10; w++)
 			{
 				if(9<=(nb2-w*9)) c = 9 ;
 				else c = nb2-9*w ;
@@ -1125,13 +1146,16 @@ void BCAnalysis(TString file, TString trigger = "default",TString period = "LHC1
 		PeriodAnalysis(2, 6., 2., 5.,period,pass,trial); // nb ent emin emax
 		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(1, 6., 2., 5.,period,pass,trial); // energy mea emin emax
+//		TFile::Open("ConvertOutput/filter.root");
+//		PeriodAnalysis(1, 6., 2., 5.01,period,pass,trial); // test test test
+
 		//..high energies
-		/*ELI this is not working properly
-		TFile::Open("ConvertOutput/filter.root");
+		//ELI this is not working properly
+/*		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(2, 6., 5.,10.,period,pass,trial); // nb ent emin emax
 		TFile::Open("ConvertOutput/filter.root");
 		PeriodAnalysis(1, 6., 5.,10.,period,pass,trial); // energy mea emin emax
-		*/
+*/
 	}
 	//provide dead cells list from original file and draw bad cells candidate from indicated file
 	TFile::Open(file);
