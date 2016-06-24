@@ -414,26 +414,22 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	Int_t CellColumnAbs=0,CellRowAbs=0;
 	Int_t Trash;
 	//..load necessary libraries
-/*    AliCalorimeterUtils* fCaloUtils = new AliCalorimeterUtils();
+    AliCalorimeterUtils* fCaloUtils = new AliCalorimeterUtils();
     //..AccessGeometry needs an input event to retrieve the run number, name, GetPHOSMatrix, GetEMCALMatrix
 	//..
-    cout<<"1"<<endl;
     AliAODEvent* aod = new AliAODEvent();
-    cout<<"2"<<endl;
     aod->SetRunNumber(254381); //will not work
     cout<<"current run number: "<<aod->GetRunNumber()<<" , name: "<<aod->GetName()<<endl;
     fCaloUtils->SetRunNumber(254381);
-    cout<<"3"<<endl;
- //   fCaloUtils->AccessGeometry(aod); // InputEvent()->GetRunNumber()
+    fCaloUtils->AccessGeometry(aod); // InputEvent()->GetRunNumber()
     //..Set the AODB calibration, bad channels etc. parameters at least once
-    cout<<"4"<<endl;
-    //    fCaloUtils->AccessOADB(aod);
+    //fCaloUtils->AccessOADB(aod);
     //..apparently not initialized correctly like eg in AliEMCALGeometry!
-    cout<<"5"<<endl;
-    fCaloUtils->SetNumberOfSuperModulesUsed(20);
-    cout<<"6"<<endl;
+    //fCaloUtils->SetNumberOfSuperModulesUsed(20);
+    cout<<"get number of cells: "<<fCaloUtils->GetEMCALGeometry()->GetNCells()<<endl;
+    cout<<"get number of supermod: "<<fCaloUtils->GetEMCALGeometry()->GetNumberOfSuperModules()<<endl;
+    cout<<"get number of supermod utils: "<<fCaloUtils->GetNumberOfSuperModulesUsed()<<endl;
 
-*/
 	TString HistoName=inhisto->GetName();
 	Double_t goodmax= 0. ;
 	Double_t goodmin= 0. ;
@@ -461,9 +457,11 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 	Plot2D->GetXaxis()->SetTitle("cell column (#eta direction)");
 	Plot2D->GetYaxis()->SetTitle("cell row (#phi direction)");
 
-    /*
-    for (Int_t c = 1; c <= inhisto->GetNbinsX(); c++)
+
+	for (Int_t c = 1; c <= inhisto->GetNbinsX(); c++)
 	{
+		//..Do that only for cell ids also accepted by the
+		if(!fCaloUtils->GetEMCALGeometry()->CheckAbsCellId(c-1))continue;
 		//..Get Row and Collumn for cell ID c
 		fCaloUtils->GetModuleNumberCellIndexesAbsCaloMap(c-1,0,CellColumn,CellRow,Trash,CellColumnAbs,CellRowAbs);
 		if(CellColumnAbs> fNMaxColsAbs || CellRowAbs>fNMaxRowsAbs)
@@ -472,9 +470,9 @@ void Process(Int_t *pflag[23040][7], TH1* inhisto, Double_t Nsigma = 4., Int_t d
 			cout<<"current col: "<<CellColumnAbs<<", max col"<<fNMaxColsAbs<<endl;
 			cout<<"current row: "<<CellRowAbs<<", max row"<<fNMaxRowsAbs<<endl;
 		}
-		Plot2D->SetBinContent(CellColumn,CellRow,inhisto->GetBinContent(c));
+		Plot2D->SetBinContent(CellColumnAbs,CellRowAbs,inhisto->GetBinContent(c));
 	}
-	*/
+
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 	//. . .draw histogram + distribution
 	//. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -897,7 +895,7 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	// 6 :
 	// 7 : give bad + dead list
 	//ELI Number of cells - (24*48)  16 full modules and 4 1/3 modules == 19,968 check that number!!
-    static const Int_t NrCells=19968; //17665;//23040;  //ELI this is in fact a very important number!!
+    static const Int_t NrCells=17663;//19968; //17665;//23040;  //ELI this is in fact a very important number!!
 
     //ELI a comment about the array positions
     //..In the histogram: bin 1= cellID 0, bin 2= cellID 1 etc
@@ -1081,13 +1079,13 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 				SaveBadCellsToPDF(newDC, w*9, c,DeadPdfName);
 			}*/
 			cout<<"    o Save the bad channel spectra to a .pdf file"<<endl;
-			for(Int_t w=0; (w*9)<nb2; w++)
+			/*for(Int_t w=0; (w*9)<nb2; w++)
 			//for(Int_t w=0; (w*9)<10; w++)
 			{
 				if(9<=(nb2-w*9)) c = 9 ;
 				else c = nb2-9*w ;
 				SaveBadCellsToPDF(newBC, w*9, c,BadPdfName) ;
-			}
+			}*/
 		}
 	}
 
