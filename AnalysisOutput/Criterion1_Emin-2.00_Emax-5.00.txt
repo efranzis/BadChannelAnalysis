@@ -1,0 +1,7 @@
+Criterion : 1, Emin = 2 GeV, Emax = 5 GeV
+Bad by lower value : 
+(0)
+Bad by higher value : 
+(0)
+Total number of bad cells
+(0)
