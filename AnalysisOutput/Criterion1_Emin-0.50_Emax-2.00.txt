@@ -1,7 +1,0 @@
-Criterion : 1, Emin = 0.5 GeV, Emax = 2 GeV
-Bad by lower value : 
-554, 764, 4627, 6275, 12912, 13970, 14981, 15162, (8)
-Bad by higher value : 
-329, 14660, (2)
-Total number of bad cells
-(10)
