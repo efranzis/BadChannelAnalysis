@@ -62,10 +62,10 @@ using namespace std;
 //________________________________________________________________________
 void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default", Int_t runNum= 254381, TString externalFile= "")
 {
-	AliCaloChannelAnalysis* Analysis=new AliCaloChannelAnalysis(period,pass,trigger,runNum);
+	AliAnaCaloChannelAnalysis* Analysis=new AliAnaCaloChannelAnalysis(period,pass,trigger,runNum);
 	Analysis->SetExternalMergedFile(externalFile);
 
-	if(fTrigger=="default"||fTrigger=="INT7"||fTrigger=="DMC7"||fTrigger=="AnyINTnoBC")
+	if(trigger=="default"||trigger=="INT7"||trigger=="DMC7"||trigger=="AnyINTnoBC")
 	{
 		Analysis->AddPeriodAnalysis(2, 4.,0.2,0.5); // mean hit in range Emin Emax
 		Analysis->AddPeriodAnalysis(2, 4.,0.5, 1.); // mean hit in range Emin Emax
