@@ -910,7 +910,7 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 	memset(newBC,-1, NrCells *sizeof(int));
 	memset(newDC,-1, NrCells *sizeof(int));
 
-	Int_t CellID, nb1=0, nb2=0;
+	Int_t CellID, nb1=0, nb2=0, nbcemc = 0, nbcdca = 0, ndcemc = 0, ndcdca = 0;
 	//INIT
 	TString output, bilan, DeadPdfName, BadPdfName;
 	for(CellID=0;CellID<NrCells;CellID++)
@@ -1030,6 +1030,7 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 		{
 			file<<"Dead cells : "<<endl;
 			cout<<"    o Dead cells : "<<endl;
+			
 			nb1 =0;
 			for(CellID=0; CellID<NrCells; CellID++)
 			{
@@ -1040,6 +1041,16 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 					cout<<CellID<<"," ;
 					exclu[CellID]=5;
 					nb1++;
+					
+					// count how many belong to emcal or dcal
+					if(CellID < 12288) {
+						nbcemc++;
+						ndcemc++;
+					}
+					else {
+						nbcdca++;
+						ndcdca++;
+					}
 				}
 			}
 			file<<"("<<nb1<<")"<<endl;
@@ -1058,10 +1069,16 @@ void PeriodAnalysis(Int_t criterum=7, Double_t Nsigma = 4.0, Double_t Emin=0.1, 
 					file<<CellID<<"\n" ;
 					cout<<CellID<<"," ;
 					nb2++;
+					// count how many belong to emcal or dcal
+					if(CellID < 12288) nbcemc++;
+					else nbcdca++;
 				}
 			}
 			file<<"("<<nb2<<")"<<endl;
 			cout<<"("<<nb2<<")"<<endl;
+			
+			file<<"Tot in EMCal = "<<nbcemc<<" (dead = "<<ndcemc<<")"<<endl;
+			file<<"Tot in DCal = "<< nbcdca<<" (dead = "<<ndcdca<<")"<<endl;
 		}
 		file.close();
 
