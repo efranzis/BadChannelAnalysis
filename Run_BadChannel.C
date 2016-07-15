@@ -4,33 +4,6 @@
 //
 // Author : Alexis Mas (SUBATECH) & M. Germain, based on getCellsRunQA.C from Olga Driga (SUBATECH)
 //
-//-----------------
-// Main method:
-//---------------
-// BadChannelAnalysis:
-//
-//    step 1 : Convert()
-//       read list of mergeable runs  in your working directory
-//       (in example below the $workdir is "/scratch/alicehp2/germain/QANew2/"
-//       The QAresults.root files should be aleady copied from alien and be in $workdir/<period>/<pass>/runnb.root
-//       read/merge the histos"EMCAL_hAmpId" and "EMCAL_hTimeId"  from QAresults.root file and write them in 
-//       $workdir/period/pass/<period><pass>Runlist0New.root"  !!! this is hardcoded !!!!!
-//       step 1 has to be called only the first time runing on a new list
-//
-//    step 2 BCanalysis() main method to analyse previously created file (hardcoded)
-// 
-//       call of different Periodanalysis(criterium,..) functions according to the wanted tests (critreria) 
-//           1 : average E for E>Emin
-//           2 : entries for E>Emin
-//           3 : ki²/ndf  (from fit of each cell Amplitude between Emin and Emax) 
-//           4 : A parameter (from fit of each cell Amplitude between Emin and Emax) 
-//           5 : B parameter (from fit of each cell Amplitude between Emin and Emax) 
-//           6 : 
-//           7 : give bad + dead list
-//
-//       Mainly used: 1 and 2 (with different settings (chi2, intervals of energy : this is quite dependent of the stat you may have )
-//       Further improvement: implement tests 1 and 2 on time distribustion histogram
-//
 // ---------------------
 //  Running the macro
 // ---------------------
@@ -60,9 +33,9 @@
 using namespace std;
 
 //________________________________________________________________________
-void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default", Int_t runNum= 254381, TString externalFile= "")
+void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default", Int_t runNum= 254381, TString externalFile= "",TString workDir="./", TString listName="runList.txt")
 {
-	AliAnaCaloChannelAnalysis* Analysis=new AliAnaCaloChannelAnalysis(period,pass,trigger,runNum);
+	AliAnaCaloChannelAnalysis* Analysis=new AliAnaCaloChannelAnalysis(period,pass,trigger,runNum,workDir,listName);
 	Analysis->SetExternalMergedFile(externalFile);
 
 	if(trigger=="default"||trigger=="INT7"||trigger=="DMC7"||trigger=="AnyINTnoBC")
@@ -77,10 +50,18 @@ void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString t
 	}
 	else
 	{
-		Analysis->AddPeriodAnalysis(2, 6.,0.5, 2.);
-		Analysis->AddPeriodAnalysis(1, 6.,0.5, 2.);
-		Analysis->AddPeriodAnalysis(2, 6., 2., 5.);
-		Analysis->AddPeriodAnalysis(1, 6., 2., 5.);
+		Analysis->AddPeriodAnalysis(2, 6.,0.5, 2.); // mean hit in range Emin Emax
+		Analysis->AddPeriodAnalysis(1, 6.,0.5, 2.); // mean energy in range Emin Emax
+		Analysis->AddPeriodAnalysis(2, 6., 2., 5.); // mean hit in range Emin Emax
+		Analysis->AddPeriodAnalysis(1, 6., 2., 5.); // mean energy in range Emin Emax
+
+		//inverted order
+		/*Analysis->AddPeriodAnalysis(1, 6.,0.5, 2.); // mean energy in range Emin Emax
+		Analysis->AddPeriodAnalysis(2, 6.,0.5, 2.); // mean hit in range Emin Emax
+		Analysis->AddPeriodAnalysis(1, 6., 2., 5.); // mean energy in range Emin Emax
+		Analysis->AddPeriodAnalysis(2, 6., 2., 5.); // mean hit in range Emin Emax
+*/
+
 		//Analysis->AddPeriodAnalysis(2, 6., 5.,10.);
 		//Analysis->AddPeriodAnalysis(1, 6., 5.,10.);
 	}

@@ -1,4 +1,5 @@
 Dead cells : 
+In EMCal : 
 49
 52
 53
@@ -57,6 +58,7 @@ Dead cells :
 9361
 9802
 12147
+In DCal : 
 12623
 12813
 12859
@@ -940,8 +942,10 @@ Dead cells :
 17660
 17661
 17662
-(941)
-Bad cells (excluded): 
+17663
+EMCal (58 =0.472005%), DCal (884 =16.4435%)
+Bad cells: 
+In EMCal : 
 48
 50
 57
@@ -1305,6 +1309,7 @@ Bad cells (excluded):
 12173
 12174
 12175
+In DCal : 
 12308
 12309
 12310
@@ -1959,4 +1964,4 @@ Bad cells (excluded):
 16867
 16879
 16886
-(1017)
+EMCal (363 =2.9541%), DCal (654 =12.1652%)
