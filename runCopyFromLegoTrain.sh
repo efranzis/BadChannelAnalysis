@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo ===========================
+<<<<<<< HEAD
 BASE="./AnalysisInput/"
 SUBDIR="muon_caloLego"
 YEAR=2016
@@ -26,6 +27,7 @@ cd $PERIOD/$SUBDIR
 
 #LHC16i
 for i in 255618 255617 255616 255615 255614 255592 255591 255583 255582 255577 255543 255542 255541 255540 255539
+
 do
 
 inFILE="alien:///alice/data/$YEAR/$PERIOD/000"${i}"/muon_calo_pass1/PWGPP/PP_EMCAL_Calibration/$TRAIN$TIME/AnalysisResults.root"
@@ -37,7 +39,7 @@ echo $outputFILE
 alien_cp $inFILE $outputFILE
 
 cd $BASE
-cd ..
+
 
 done
 

@@ -25,9 +25,12 @@
 /////////////////////////////////////////////////
 
 #include <TString.h>
-#include <AliAnaCaloChannelAnalysis.h>
+#include <TFile.h>
+#include <TH2D.h>
+#include <TH1D.h>
+#include <TList.h>
+#include "AliAnaCaloChannelAnalysis.h"
 
-using namespace std;
 
 //________________________________________________________________________
 void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString trigger= "default", Int_t runNum= 254381, TString externalFile= "",TString workDir="./", TString listName="runList.txt")
@@ -36,8 +39,7 @@ void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString t
 	Analysis->SetExternalMergedFile(externalFile);
 	Analysis->SetQAChecks(0);  //1=Perform QA checks
 	Analysis->SetNTrial(5);  //Perform QA checks
-//	Analysis->MaskEdgesSM(1);  //Mask the supermodule edges as bad
-
+	//	Analysis->MaskEdgesSM(1);  //Mask the supermodule edges as bad
 	if(trigger=="default"||trigger=="INT7"||trigger=="DMC7"||trigger=="AnyINTnoBC")
 	{
 		Analysis->AddPeriodAnalysis(2, 4.,0.2,0.5); // mean hit in range Emin Emax
@@ -68,3 +70,70 @@ void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString t
 	Analysis->Run();
 }
 //________________________________________________________________________
+
+void CheckListDeadChannels(TString qaoutputPath = "/data/Work/EMCAL/BadChannels/LHC16h/510muon_caloLego/", TString runlist = "/data/Work/EMCAL/BadChannels/LHC16h/rulListLHC16h_EMCGood_Fieldp30.txt", TString listname = "CaloQA_AnyINT", TString hname = "EMCAL_hAmpId"){
+
+	// current list of dead cells from Martin
+	Int_t ndeadSM4 = 32;
+	Int_t listDeadSM4[ndeadSM4] = {4833, 4832, 4881, 4880, 4835, 4834, 4883, 4882, 4837, 4836, 4885, 4884, 4839, 4838, 4887, 4886, 4841, 4840, 4889, 4888, 4843, 4842, 4891, 4890, 4845, 4844, 4893, 4892, 4847, 4846, 4895, 4894};
+	
+	Int_t ndeadSM7 = 32;
+	Int_t listDeadSM7[ndeadSM7] = {8481, 8480, 8529, 8528, 8483, 8482, 8531, 8530, 8485, 8484, 8533, 8532, 8487, 8486, 8535, 8534, 8489, 8488, 8537, 8536, 8491, 8490, 8539, 8538, 8493, 8492, 8541, 8540, 8495, 8494, 8543, 8542};
+	
+	ifstream read(runlist.Data());
+	Int_t nruns = 0;
+	TString currentRun = "";
+	while(read){
+		read>> currentRun;
+		Printf("Run %s", currentRun.Data());
+		
+		TFile *fin = new TFile(Form("%s%s.root", qaoutputPath.Data(), currentRun.Data()));
+		
+		if(!fin->IsOpen()){
+			Printf("%s%s.root not found", qaoutputPath.Data(), currentRun.Data());
+			continue;
+		}
+		
+		TDirectoryFile *dir = (TDirectoryFile*)fin->Get(listname);
+		if(!dir){
+			Printf("%s not found", listname.Data());
+			fin->ls();
+			continue;
+		}
+		
+		TList *list = (TList*)dir->Get(listname);
+		if(!list){
+			Printf("%s not found", listname.Data());
+			dir->ls();
+			continue;
+		}
+		
+		TH2D *hAmpCellId = (TH2D*)list->FindObject(hname);
+		if(!hAmpCellId){
+			Printf("hAmpCellId not found");
+			continue;
+		}
+		
+		for(Int_t ideadsm4 = 0; ideadsm4 < ndeadSM4; ideadsm4++){
+			TH1D* hAmpForSpecificID = hAmpCellId->ProjectionX(Form("hAmpForSpecificID"), listDeadSM4[ideadsm4], listDeadSM4[ideadsm4]);
+			Int_t entries = hAmpForSpecificID->GetEntries();
+			if(entries > 0) {
+				Printf("Error! %d entries found in Cell %d, run %s", entries, listDeadSM4[ideadsm4], currentRun.Data());
+			}
+			
+			delete hAmpForSpecificID;
+		}
+		
+		for(Int_t ideadsm7 = 0; ideadsm7 < ndeadSM7; ideadsm7++){
+			TH1D* hAmpForSpecificID = hAmpCellId->ProjectionX(Form("hAmpForSpecificID"), listDeadSM7[ideadsm7], listDeadSM7[ideadsm7]);
+			Int_t entries = hAmpForSpecificID->GetEntries();
+			if(entries > 0) {
+				Printf("Error! %d entries found in Cell %d, run %s", entries, listDeadSM7[ideadsm7], currentRun.Data());
+			}
+			delete hAmpForSpecificID;
+		}
+		
+		nruns++;
+		
+	}
+}
