@@ -38,8 +38,8 @@ void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString t
 	AliAnaCaloChannelAnalysis* Analysis=new AliAnaCaloChannelAnalysis(period,pass,trigger,runNum,workDir,listName);
 	Analysis->SetExternalMergedFile(externalFile);
 	Analysis->SetQAChecks(0);  //1=Perform QA checks
-	Analysis->SetNTrial(4);  //Perform QA checks
-	Analysis->MaskEdgesSM(1);  //Mask the supermodule edges as bad
+	Analysis->SetNTrial(5);  //Perform QA checks
+//	Analysis->MaskEdgesSM(1);  //Mask the supermodule edges as bad
 
 	if(trigger=="default"||trigger=="INT7"||trigger=="DMC7"||trigger=="AnyINTnoBC")
 	{
@@ -57,6 +57,8 @@ void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString t
 		Analysis->AddPeriodAnalysis(1, 6.,0.5, 2.); // mean energy in range Emin Emax
 		Analysis->AddPeriodAnalysis(2, 6., 2., 5.); // mean hit in range Emin Emax
 		Analysis->AddPeriodAnalysis(1, 6., 2., 5.); // mean energy in range Emin Emax
+		Analysis->AddPeriodAnalysis(2, 6., 5., 10.); // mean hit in range Emin Emax
+		Analysis->AddPeriodAnalysis(1, 6., 5., 10.); // mean energy in range Emin Emax
 
 		//inverted order
 		/*Analysis->AddPeriodAnalysis(1, 6.,0.5, 2.); // mean energy in range Emin Emax
