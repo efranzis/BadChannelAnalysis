@@ -7,8 +7,8 @@
 // ---------------------
 //  Running the macro
 // ---------------------
-//   root [2] .L BadChannelAnalysis.C++
-//   root [2] BadChannelAnalysis("EMCAL","LHC15o","muon_caloLego","AnyINTnoBC",trial=0)
+//   root [2] .L Run_BadChannel.C++
+//   root [2] Run_BadChannel("EMCAL","LHC15o","muon_caloLego","AnyINTnoBC",trial=0)
 //  
 //  !!! pay attention the trigger name depends on the caloQA_triggername you want to analyse check first in QAresults.root what is abvailable
 //  !!! it is generally not good to run it on triggered data for the following reasons:
@@ -22,13 +22,10 @@
 //  - <period><pass>.txt file with list of dead/bad cells identified 
 //  - a pdf file with all energy distributions plots of all bad cells candidates (compared to a reference one (hard coded see Draw function to change)
 //
-//    Further improvement: implement tests 1 and 2 on time distribution histogram
-//
 /////////////////////////////////////////////////
 
-//#include <TString.h>
-//#include <AliCaloChannelAnalysis.cxx>
-//#include <AliCaloChannelAnalysis.h>
+#include <TString.h>
+#include <AliAnaCaloChannelAnalysis.h>
 
 using namespace std;
 
@@ -57,8 +54,8 @@ void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString t
 		Analysis->AddPeriodAnalysis(1, 6.,0.5, 2.); // mean energy in range Emin Emax
 		Analysis->AddPeriodAnalysis(2, 6., 2., 5.); // mean hit in range Emin Emax
 		Analysis->AddPeriodAnalysis(1, 6., 2., 5.); // mean energy in range Emin Emax
-		Analysis->AddPeriodAnalysis(2, 6., 5., 10.); // mean hit in range Emin Emax
-		Analysis->AddPeriodAnalysis(1, 6., 5., 10.); // mean energy in range Emin Emax
+//		Analysis->AddPeriodAnalysis(2, 6., 5., 10.); // mean hit in range Emin Emax
+//		Analysis->AddPeriodAnalysis(1, 6., 5., 10.); // mean energy in range Emin Emax
 
 		//inverted order
 		/*Analysis->AddPeriodAnalysis(1, 6.,0.5, 2.); // mean energy in range Emin Emax
@@ -66,9 +63,6 @@ void Run_BadChannel(TString period = "LHC15f", TString pass = "pass2", TString t
 		Analysis->AddPeriodAnalysis(1, 6., 2., 5.); // mean energy in range Emin Emax
 		Analysis->AddPeriodAnalysis(2, 6., 2., 5.); // mean hit in range Emin Emax
 */
-
-		//Analysis->AddPeriodAnalysis(2, 6., 5.,10.);
-		//Analysis->AddPeriodAnalysis(1, 6., 5.,10.);
 	}
 
 	Analysis->Run();
