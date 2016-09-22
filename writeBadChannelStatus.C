@@ -62,44 +62,47 @@ void etaphi(){
 	cout<<eta<<phi<<endl;
 	
 }
+void writeBadChannelStatus(TString period = "LHC15f", TString train = "", TString trigger= "default", Int_t runNum= 254381,Int_t trial,Int_t istat,TString workDir=".")
+//void writeBadChannelStatus(Int_t istat, TString pathinput = "LHC15omuon_calopass1BC_SummaryResults_V0.txt", const char* geoType="EMCAL_COMPLETE12SMV1_DCAL_8SM")
+{
+	TString analysisOutput  = Form("AnalysisOutput/%s/Version%i",period.Data(),trial);
+	TString cellSummaryFile = Form("%s/%s/%s%s_Bad_Amplitudes_V%i.txt",fWorkdir.Data(), fAnalysisOutput.Data(), train.Data(), trigger.Data(),trial); ;
 
-void writeBadChannelStatus(Int_t istat, TString pathinput = "LHC15omuon_calopass1BC_SummaryResults_V0.txt", const char* geoType="EMCAL_COMPLETE12SMV1_DCAL_8SM"){
- 
-  ifstream fdata(pathinput);
- 
-  
-  //const char* geoType="EMCAL_COMPLETE12SMV1";
-  AliEMCALGeometry* geom = new AliEMCALGeometry(geoType,"EMCAL");
-  //cout<<"AliEMCALGeoUtils('"<<geoType<< ",'EMCAL') !!"<<endl;
-  //cout <<" how many SMs?:"<<(geom->GetEMCGeometry())->GetNumberOfSuperModules()<< endl;
-  
-  Int_t absId, status;
-  
-  Int_t p = -1;//, q,r;
-  Int_t ncols;
-  //Int_t nlines = 0 ;
-  string line;
-  
-  while (fdata){
-  	  getline(fdata, line);
-  	  ncols = atoi(line.c_str());
-  	  Printf("Line = %s, number = %d", line.data(), ncols);
-  	  // = fscanf(fdata,"%d",&p);
-  	  if (ncols< 0) break;
-  	  absId=p;
-  	  
-  	  // run=q;
-  	  status=istat;
-  	  
-  	  
-  	  Int_t nSupMod, nModule, nIphi, nIeta;
-  	  Int_t iphi, ieta,kk;
-  	  
-  	  // kk is the AbsId.
-  	  geom->GetCellIndex(absId,  nSupMod, nModule, nIphi, nIeta);
-  	  geom->GetCellPhiEtaIndexInSModule(nSupMod,nModule,nIphi,nIeta, iphi,ieta);
-  	  //cout << absId <<  nSupMod  << ieta << iphi << status <<endl;
-  	  printf("%d \t %d \t %d \t %d \t %d \n",absId,nSupMod,ieta,iphi,status);
-  	  // printf("%d \t %d %d %d %d \n",absId,nSupMod,ieta,iphi,status);
-  }
+	ifstream fdata(pathinput);
+
+
+	//const char* geoType="EMCAL_COMPLETE12SMV1";
+	AliEMCALGeometry* geom = new AliEMCALGeometry(geoType,"EMCAL");
+	//cout<<"AliEMCALGeoUtils('"<<geoType<< ",'EMCAL') !!"<<endl;
+	//cout <<" how many SMs?:"<<(geom->GetEMCGeometry())->GetNumberOfSuperModules()<< endl;
+
+	Int_t absId, status;
+
+	Int_t p = -1;//, q,r;
+	Int_t ncols;
+	//Int_t nlines = 0 ;
+	string line;
+
+	while (fdata)
+	{
+		getline(fdata, line);
+		ncols = atoi(line.c_str());
+		Printf("Line = %s, number = %d", line.data(), ncols);
+		// = fscanf(fdata,"%d",&p);
+		if (ncols< 0) break;
+		absId=p;
+
+		// run=q;
+		status=istat;
+
+		Int_t nSupMod, nModule, nIphi, nIeta;
+		Int_t iphi, ieta,kk;
+
+		// kk is the AbsId.
+		geom->GetCellIndex(absId,  nSupMod, nModule, nIphi, nIeta);
+		geom->GetCellPhiEtaIndexInSModule(nSupMod,nModule,nIphi,nIeta, iphi,ieta);
+		//cout << absId <<  nSupMod  << ieta << iphi << status <<endl;
+		printf("%d \t %d \t %d \t %d \t %d \n",absId,nSupMod,ieta,iphi,status);
+		// printf("%d \t %d %d %d %d \n",absId,nSupMod,ieta,iphi,status);
+	}
 }
