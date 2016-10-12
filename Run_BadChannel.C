@@ -21,14 +21,15 @@
 #include <TH2D.h>
 #include <TH1D.h>
 #include <TList.h>
-/*#include "AliAnaCaloChannelAnalysis.h" //include when compile
+#include <TStopwatch.h>
+#include "AliAnaCaloChannelAnalysis.h" //include when compile
 #include "AliEMCALGeometry.h"          //include when compile
 #include "AliCalorimeterUtils.h"       //include when compile
 #include "AliAODEvent.h"               //include when compile
 #include "AliOADBContainer.h"          //include when compile
-*/
+
 //________________________________________________________________________
-void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 244411, TString externalFile= "",TString listName="runList.txt",TString workDir=".", Int_t nversion)
+void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 244411, TString externalFile= "",TString listName="runList.txt",TString workDir=".", Int_t nversion = 1)
 {
 	
 	TStopwatch watch;
