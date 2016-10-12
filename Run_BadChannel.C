@@ -30,6 +30,10 @@
 //________________________________________________________________________
 void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 244411, TString externalFile= "",TString listName="runList.txt",TString workDir=".")
 {
+	
+	TStopwatch watch;
+	watch.Start();
+	
 	AliAnaCaloChannelAnalysis* Analysis;
 	//..If you do the analysis run by run - this might be helpful
 	//Analysis=new AliAnaCaloChannelAnalysis(period,train,trigger,runNum,runNum,workDir,listName);
@@ -46,24 +50,27 @@ void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TStr
 	//. . . . . . . . . . . . . . . . . . . . . . . .
 	Analysis->AddPeriodAnalysis(2, 4.,0.1,0.3); // hit/event in range Emin Emax
 	Analysis->AddPeriodAnalysis(1, 6.,0.1,0.3); // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.,0.2,0.5); // hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 6.,0.2,0.5); // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.,0.5,1.0); // hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 6.,0.5,1.0); // energy/hit in range Emin Emax
+	//Analysis->AddPeriodAnalysis(2, 4.,0.2,0.5); // hit/event in range Emin Emax
+	//Analysis->AddPeriodAnalysis(1, 6.,0.2,0.5); // energy/hit in range Emin Emax
+	//Analysis->AddPeriodAnalysis(2, 4.,0.5,1.0); // hit/event in range Emin Emax
+	//Analysis->AddPeriodAnalysis(1, 6.,0.5,1.0); // energy/hit in range Emin Emax
 
 	//..If there is enough statistic add also these:
-	Analysis->AddPeriodAnalysis(2, 4.,1.0,4.0); // hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 6.,1.0,4.0); // mean energy in range Emin Emax
+	//Analysis->AddPeriodAnalysis(2, 4.,1.0,4.0); // hit/event in range Emin Emax
+	//Analysis->AddPeriodAnalysis(1, 6.,1.0,4.0); // mean energy in range Emin Emax
 //	Analysis->AddPeriodAnalysis(2, 4.,1.0,10.0);// hit/event in range Emin Emax
 //	Analysis->AddPeriodAnalysis(1, 5.,1.0,10.0);// energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 5.,3.0,10.0);// (PbPb extra range) hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 5.,3.0,10.0);// (PbPb extra range) energy/hit in range Emin Emax
+	//Analysis->AddPeriodAnalysis(2, 5.,3.0,10.0);// (PbPb extra range) hit/event in range Emin Emax
+	//Analysis->AddPeriodAnalysis(1, 5.,3.0,10.0);// (PbPb extra range) energy/hit in range Emin Emax
 
 ///*test time stuff*/	Analysis->AddPeriodAnalysis(3, 6,-20,+20);// energy/hit in range Emin Emax
 
 
 	//..Start the bad channel analysis
 	Analysis->Run();
+	
+	watch.Stop();
+	watch.Print();
 }
 //________________________________________________________________________
 void Get_RowCollumnID(Int_t runNum= 244411,Int_t inputCellID=-1,Int_t inputRow=-1,Int_t inputCollumn=-1,Int_t inputSM=-1)
