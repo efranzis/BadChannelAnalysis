@@ -28,7 +28,7 @@
 #include "AliOADBContainer.h"          //include when compile
 */
 //________________________________________________________________________
-void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 244411, TString externalFile= "",TString listName="runList.txt",TString workDir=".")
+void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 244411, TString externalFile= "",TString listName="runList.txt",TString workDir=".", Int_t nversion)
 {
 	
 	TStopwatch watch;
@@ -39,7 +39,7 @@ void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TStr
 	//Analysis=new AliAnaCaloChannelAnalysis(period,train,trigger,runNum,runNum,workDir,listName);
 
 	//..If you do it with merged files use this
-	Analysis=new AliAnaCaloChannelAnalysis(period,train,trigger,runNum,100,workDir,listName);
+	Analysis=new AliAnaCaloChannelAnalysis(period,train,trigger,runNum,nversion,workDir,listName);
 
 	//..Settings
 	Analysis->SetExternalMergedFile(externalFile);
