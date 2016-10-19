@@ -9,6 +9,7 @@
 // ---------------------
 //  Running the macro
 // ---------------------
+// use root -b to speed up (no canvas drawn)
 // root [2] .L Run_BadChannel.C++
 // root [2] Run_BadChannel("LHC15n","Train_603","AnyINTnoBC",244411)
 //  
@@ -29,7 +30,7 @@
 #include "AliOADBContainer.h"          //include when compile
 
 //________________________________________________________________________
-void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 244411, TString externalFile= "",TString listName="runList.txt",TString workDir=".", Int_t nversion = 1)
+void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 245683, TString externalFile= "",TString listName="runList.txt",TString workDir=".", Int_t nversion = 1)
 {
 	
 	TStopwatch watch;
