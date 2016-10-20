@@ -366,10 +366,10 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 	gSystem->mkdir(TString::Format("%s/%s/", analysisOutput.Data(), train.Data()));
 	gSystem->mkdir(TString::Format("%s/%s/RunByRunSummary/", analysisOutput.Data(), train.Data()));
 	for(Int_t ic = 0; ic<nCv; ic++){
-		cBad [ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.gif", analysisOutput.Data(), train.Data(), cBad [ic]->GetName()));
-		cGood[ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.gif", analysisOutput.Data(), train.Data(), cGood[ic]->GetName()));
-		cDead[ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.gif", analysisOutput.Data(), train.Data(), cDead[ic]->GetName()));
-		cAmp [ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.gif", analysisOutput.Data(), train.Data(), cAmp [ic]->GetName()));
+		cBad [ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cBad [ic]->GetName()));
+		cGood[ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cGood[ic]->GetName()));
+		cDead[ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cDead[ic]->GetName()));
+		cAmp [ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cAmp [ic]->GetName()));
 	}
 }
 //________________________________________________________________________
