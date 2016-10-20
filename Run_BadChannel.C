@@ -30,9 +30,6 @@
 #include "AliAODEvent.h"               //include when compile
 #include "AliOADBContainer.h"          //include when compile
 
-//_______________________________________________________________________
-// some helper methods
-void CalculatePads(Int_t n, Int_t&nx, Int_t&ny, Int_t&dx, Int_t&dy, Int_t perrow = 5, Int_t stdd = 400);
 
 //________________________________________________________________________
 void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 245683, TString externalFile= "",TString listName="runList.txt",TString workDir=".", Int_t nversion = 1)
@@ -444,17 +441,3 @@ void CheckListDeadChannels(TString qaoutputPath = "/data/Work/EMCAL/BadChannels/
 	}
 }
 
-
-
-//---------------------------------------------------------------------------------------------------------------------------------------------------------
-void CalculatePads(Int_t n, Int_t&nx, Int_t&ny, Int_t&dx, Int_t&dy, Int_t perrow, Int_t stdd){
-   
-   Int_t percolumn = n/perrow;
-   if(n%perrow > 0) percolumn++;
-   nx = percolumn;
-   ny = perrow;
-   dx = stdd*nx;
-   dy= stdd*ny;
-   
-   return;
-}
