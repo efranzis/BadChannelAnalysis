@@ -22,12 +22,17 @@
 #include <TH2D.h>
 #include <TH1D.h>
 #include <TList.h>
+#include <TSystem.h>
 #include <TStopwatch.h>
 #include "AliAnaCaloChannelAnalysis.h" //include when compile
 #include "AliEMCALGeometry.h"          //include when compile
 #include "AliCalorimeterUtils.h"       //include when compile
 #include "AliAODEvent.h"               //include when compile
 #include "AliOADBContainer.h"          //include when compile
+
+//_______________________________________________________________________
+// some helper methods
+void CalculatePads(Int_t n, Int_t&nx, Int_t&ny, Int_t&dx, Int_t&dy, Int_t perrow = 5, Int_t stdd = 400);
 
 //________________________________________________________________________
 void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 245683, TString externalFile= "",TString listName="runList.txt",TString workDir=".", Int_t nversion = 1)
@@ -227,18 +232,19 @@ void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t r
 	plot2D_Dead_OADB->DrawCopy("colz");
 }
 //________________________________________________________________________
-void SummarizeRunByRun(TString period = "LHC15f", TString pass = "pass2",TString workDir=".", TString listName="runList.txt")
+void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", TString trigger= "AnyINTnoBC", TString workDir=".", TString listName="runList.txt")
 {
 	//..Open the text file with the run list numbers and run index
 	cout<<"o o o Open .txt file with run indices. Name = " << listName << endl;
 	TString analysisInput  = Form("AnalysisInput/%s",period.Data());
 	TString analysisOutput = Form("AnalysisOutput/%s",period.Data());
-	TString runList        = Form("%s/%s/%s/%s",workDir.Data(), analysisInput.Data(), pass.Data(), listName.Data());
+	TString runList        = Form("%s/%s/%s/%s",workDir.Data(), analysisInput.Data(), train.Data(),listName.Data());
 
 	FILE *pFile = fopen(runList.Data(), "r");
 	if(!pFile)
 	{
-		cout<<"couldn't open file!"<<endl;
+		cout<<"couldn't open file "<<runList<<"!"<<endl;
+		return;
 	}
 	Int_t q;
 	Int_t ncols;
@@ -260,36 +266,31 @@ void SummarizeRunByRun(TString period = "LHC15f", TString pass = "pass2",TString
 	TString badChannelOutput;
 	TString infoText;
 
-	TCanvas *cBad  = new TCanvas("badcells","badcells",1000,750);
-	TCanvas *cGood = new TCanvas("goodcells","goodcells",1000,750);
-	TCanvas *cDead = new TCanvas("deadcells","deadcells",1000,750);
-	TCanvas *cAmp  = new TCanvas("Amplitide","Amplitide",1000,750);
-	if(nRun > 16)
-	{
-		cBad->Divide(5,5);
-		cGood->Divide(5,5);
-		cDead->Divide(5,5);
-		cAmp->Divide(5,5);
-	}
-	else if(nRun > 9)
-	{
-		cBad->Divide(4,4);
-		cGood->Divide(4,4);
-		cDead->Divide(4,4);
-		cAmp->Divide(4,4);
-	}
-	else if(nRun > 6)
-	{
-		cBad->Divide(3,3);
-		cGood->Divide(3,3);
-		cDead->Divide(3,3);
-		cAmp->Divide(3,3);
-	}
+	Int_t totalperCv = 25;
+	Int_t nPad = TMath::Sqrt(totalperCv);
+	Int_t nCv = nRun/totalperCv;
+	
+	TCanvas *cBad [nCv];
+	TCanvas *cGood[nCv];
+	TCanvas *cDead[nCv];
+	TCanvas *cAmp [nCv];
+	for(Int_t ic = 0; ic<nCv; ic++){
+		cBad [ic] = new TCanvas(TString::Format("badcells%d", ic), TString::Format("badcells  (%d/%d)", ic+1, nCv), 1000,750);
+		cGood[ic] = new TCanvas(TString::Format("goodcells%d", ic),TString::Format("goodcells (%d/%d)", ic+1, nCv),1000,750);
+		cDead[ic] = new TCanvas(TString::Format("deadcells%d", ic),TString::Format("deadcells (%d/%d)", ic+1, nCv),1000,750);
+		cAmp [ic] = new TCanvas(TString::Format("Amplitide%d", ic),TString::Format("Amplitide (%d/%d)", ic+1, nCv),1000,750);
+		
+		cBad [ic] ->Divide(nPad,nPad);
+		cGood[ic] ->Divide(nPad,nPad);
+		cDead[ic] ->Divide(nPad,nPad);
+		cAmp [ic] ->Divide(nPad,nPad);
+	}              
+	
 
 	//..loop over the amount of run numbers found in the previous text file.
 	for(Int_t i = 0 ; i < nRun ; i++)  //Version%i" LHC16i_muon_caloLego_Histograms_V255539
 	{
-		rootFileName      = Form("%s_%s_Histograms_V%i.root",period.Data(),pass.Data(),RunId[i]);
+		rootFileName      = Form("%s%s_Histograms_V%i.root", train.Data(), trigger.Data(), RunId[i]);
 		badChannelOutput  = Form("%s/Version%i/%s", analysisOutput.Data(), RunId[i],rootFileName.Data());
 
 		cout<<"Open root file: "<<badChannelOutput<<endl;
@@ -300,14 +301,32 @@ void SummarizeRunByRun(TString period = "LHC15f", TString pass = "pass2",TString
 			continue;
 		}
 
-		TH2F *badCells  = (TH2F*)f->Get("HitRowColumn_Flag2");
-		TH2F *goodCells = (TH2F*)f->Get("HitRowColumn_Flag0");
-		TH2F *deadCells = (TH2F*)f->Get("HitRowColumn_Flag1");
+		//TH2F *badCells  = (TH2F*)f->Get("HitRowColumn_Flag2");
+		//TH2F *goodCells = (TH2F*)f->Get("HitRowColumn_Flag0");
+		//TH2F *deadCells = (TH2F*)f->Get("HitRowColumn_Flag1");
+		TH2F *badCells  = (TH2F*)f->Get("2DChannelMap_Flag2");
+		if(!badCells) {
+			Printf("2DChannelMap_Flag2 not found");
+			continue;
+		}
+		TH2F *goodCells = (TH2F*)f->Get("2DChannelMap_Flag0");
+		if(!goodCells) {
+			Printf("2DChannelMap_Flag0 not found");
+			continue;
+		}
+		TH2F *deadCells = (TH2F*)f->Get("2DChannelMap_Flag1");
+		if(!deadCells) {
+			Printf("2DChannelMap_Flag1 not found");
+			continue;
+		}
 		TH2F *ampID     = (TH2F*)f->Get("hCellAmplitude");
-		if(i<25)
-		{
+		if(!ampID) {
+			Printf("hCellAmplitude not found");
+			continue;
+		}
+		
 			//....................................
-			cBad->cd(i+1);
+			cBad[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1);
 			badCells->Draw("colz");
 			infoText=Form("Bad Cells - Run %i",RunId[i]);
 			TLatex* text = new TLatex(0.2,0.8,infoText);
@@ -316,7 +335,7 @@ void SummarizeRunByRun(TString period = "LHC15f", TString pass = "pass2",TString
 			text->SetTextColor(1);
 			text->Draw();
 			//....................................
-			cGood->cd(i+1);
+			cGood[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1);
 			goodCells->Draw("colz");
 			infoText=Form("Good Cells - Run %i",RunId[i]);
 			TLatex* text1 = new TLatex(0.2,0.8,infoText);
@@ -325,7 +344,7 @@ void SummarizeRunByRun(TString period = "LHC15f", TString pass = "pass2",TString
 			text1->SetTextColor(1);
 			text1->Draw();
 			//....................................
-			cDead->cd(i+1);
+			cDead[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1);
 			deadCells->Draw("colz");
 			infoText=Form("Dead Cells - Run %i",RunId[i]);
 			TLatex* text2 = new TLatex(0.2,0.8,infoText);
@@ -334,7 +353,7 @@ void SummarizeRunByRun(TString period = "LHC15f", TString pass = "pass2",TString
 			text2->SetTextColor(1);
 			text2->Draw();
 			//....................................
-			cAmp->cd(i+1)->SetLogz();
+			cAmp[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1)->SetLogz();
 //			ampID->GetYaxis()->SetRangeUser(7500,9500); //LHC16i
 //			ampID->GetYaxis()->SetRangeUser(1400,1600); //LHC16i
 			ampID->GetYaxis()->SetRangeUser(4750,5050); //LHC16h
@@ -345,7 +364,15 @@ void SummarizeRunByRun(TString period = "LHC15f", TString pass = "pass2",TString
 			text3->SetNDC();
 			text3->SetTextColor(1);
 			text3->Draw();
-		}
+		
+	}
+	gSystem->mkdir(TString::Format("%s/%s/", analysisOutput.Data(), train.Data()));
+	gSystem->mkdir(TString::Format("%s/%s/RunByRunSummary/", analysisOutput.Data(), train.Data()));
+	for(Int_t ic = 0; ic<nCv; ic++){
+		cBad [ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.gif", analysisOutput.Data(), train.Data(), cBad [ic]->GetName()));
+		cGood[ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.gif", analysisOutput.Data(), train.Data(), cGood[ic]->GetName()));
+		cDead[ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.gif", analysisOutput.Data(), train.Data(), cDead[ic]->GetName()));
+		cAmp [ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.gif", analysisOutput.Data(), train.Data(), cAmp [ic]->GetName()));
 	}
 }
 //________________________________________________________________________
@@ -415,4 +442,19 @@ void CheckListDeadChannels(TString qaoutputPath = "/data/Work/EMCAL/BadChannels/
 		nruns++;
 
 	}
+}
+
+
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------------
+void CalculatePads(Int_t n, Int_t&nx, Int_t&ny, Int_t&dx, Int_t&dy, Int_t perrow, Int_t stdd){
+   
+   Int_t percolumn = n/perrow;
+   if(n%perrow > 0) percolumn++;
+   nx = percolumn;
+   ny = perrow;
+   dx = stdd*nx;
+   dy= stdd*ny;
+   
+   return;
 }
