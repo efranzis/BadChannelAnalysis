@@ -54,14 +54,16 @@ void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TStr
 	//. . . . . . . . . . . . . . . . . . . . . . . .
 	Analysis->AddPeriodAnalysis(2, 4.,0.1,0.3); // hit/event in range Emin Emax
 	Analysis->AddPeriodAnalysis(1, 6.,0.1,0.3); // energy/hit in range Emin Emax
-	//Analysis->AddPeriodAnalysis(2, 4.,0.2,0.5); // hit/event in range Emin Emax
-	//Analysis->AddPeriodAnalysis(1, 6.,0.2,0.5); // energy/hit in range Emin Emax
-	//Analysis->AddPeriodAnalysis(2, 4.,0.5,1.0); // hit/event in range Emin Emax
-	//Analysis->AddPeriodAnalysis(1, 6.,0.5,1.0); // energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.,0.2,0.5); // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 6.,0.2,0.5); // energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.,0.5,1.0); // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 6.,0.5,1.0); // energy/hit in range Emin Emax
 
 	//..If there is enough statistic add also these:
 	//Analysis->AddPeriodAnalysis(2, 4.,1.0,4.0); // hit/event in range Emin Emax
 	//Analysis->AddPeriodAnalysis(1, 6.,1.0,4.0); // mean energy in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.,1.0,6.0); // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 6.,1.0,6.0); // mean energy in range Emin Emax
 //	Analysis->AddPeriodAnalysis(2, 4.,1.0,10.0);// hit/event in range Emin Emax
 //	Analysis->AddPeriodAnalysis(1, 5.,1.0,10.0);// energy/hit in range Emin Emax
 	//Analysis->AddPeriodAnalysis(2, 5.,3.0,10.0);// (PbPb extra range) hit/event in range Emin Emax
@@ -229,6 +231,9 @@ void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t r
 	plot2D_Dead_OADB->DrawCopy("colz");
 }
 //________________________________________________________________________
+/// Draw the good, bad, dead channel maps, and the amplitude distribution per each run and save them in pdf files in analysisOutput/train/RunByRunSummary
+/// -- can improve: write different pages in one pdf
+/// -- decide how to treat this info
 void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", TString trigger= "AnyINTnoBC", TString workDir=".", TString listName="runList.txt")
 {
 	//..Open the text file with the run list numbers and run index
@@ -281,23 +286,48 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 		cGood[ic] ->Divide(nPad,nPad);
 		cDead[ic] ->Divide(nPad,nPad);
 		cAmp [ic] ->Divide(nPad,nPad);
-	}              
+	}
 	
+	
+	TH2F* hFlagvsRun[3]; 
+	hFlagvsRun[0] = 0x0;
+	hFlagvsRun[1] = 0x0;
+	hFlagvsRun[2] = 0x0;
 
+	TH2F* hFlagNew[3]; 
+	hFlagNew[0] = 0x0;
+	hFlagNew[1] = 0x0;
+	hFlagNew[2] = 0x0;
+	
+	TCanvas *cFlag = new TCanvas("cFlag", "cFlag", 800, 800);
+	cFlag->Divide(2, 2);
+	
+	TCanvas *cFlagNew = new TCanvas("cFlagNew", "cFlag new", 800, 800);
+	cFlagNew->Divide(2, 2);
+
+	AliCalorimeterUtils *fCaloUtils = new AliCalorimeterUtils();
+	//..Create a dummy event for the CaloUtils
+	AliAODEvent* aod = new AliAODEvent();
+	fCaloUtils->SetRunNumber(RunId[0]);
+	fCaloUtils->AccessGeometry(aod);
+	
+	Int_t    ncells  = 0, runNotFound = 0;
 	//..loop over the amount of run numbers found in the previous text file.
 	for(Int_t i = 0 ; i < nRun ; i++)  //Version%i" LHC16i_muon_caloLego_Histograms_V255539
 	{
 		rootFileName      = Form("%s%s_Histograms_V%i.root", train.Data(), trigger.Data(), RunId[i]);
 		badChannelOutput  = Form("%s/Version%i/%s", analysisOutput.Data(), RunId[i],rootFileName.Data());
-
+		
 		cout<<"Open root file: "<<badChannelOutput<<endl;
 		TFile *f = TFile::Open(badChannelOutput);
 		if(!f)
 		{
 			cout<<"Couldn't open/find .root file: "<<badChannelOutput<<endl;
+			RunId[i] = -1;
+			runNotFound++;
 			continue;
 		}
-
+		
 		//TH2F *badCells  = (TH2F*)f->Get("HitRowColumn_Flag2");
 		//TH2F *goodCells = (TH2F*)f->Get("HitRowColumn_Flag0");
 		//TH2F *deadCells = (TH2F*)f->Get("HitRowColumn_Flag1");
@@ -306,63 +336,149 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 			Printf("2DChannelMap_Flag2 not found");
 			continue;
 		}
+		
+		
 		TH2F *goodCells = (TH2F*)f->Get("2DChannelMap_Flag0");
 		if(!goodCells) {
 			Printf("2DChannelMap_Flag0 not found");
 			continue;
 		}
+		
+		
 		TH2F *deadCells = (TH2F*)f->Get("2DChannelMap_Flag1");
 		if(!deadCells) {
 			Printf("2DChannelMap_Flag1 not found");
 			continue;
 		}
+		
 		TH2F *ampID     = (TH2F*)f->Get("hCellAmplitude");
 		if(!ampID) {
 			Printf("hCellAmplitude not found");
 			continue;
 		}
 		
-			//....................................
-			cBad[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1);
-			badCells->Draw("colz");
-			infoText=Form("Bad Cells - Run %i",RunId[i]);
-			TLatex* text = new TLatex(0.2,0.8,infoText);
-			text->SetTextSize(0.06);
-			text->SetNDC();
-			text->SetTextColor(1);
-			text->Draw();
-			//....................................
-			cGood[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1);
-			goodCells->Draw("colz");
-			infoText=Form("Good Cells - Run %i",RunId[i]);
-			TLatex* text1 = new TLatex(0.2,0.8,infoText);
-			text1->SetTextSize(0.06);
-			text1->SetNDC();
-			text1->SetTextColor(1);
-			text1->Draw();
-			//....................................
-			cDead[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1);
-			deadCells->Draw("colz");
-			infoText=Form("Dead Cells - Run %i",RunId[i]);
-			TLatex* text2 = new TLatex(0.2,0.8,infoText);
-			text2->SetTextSize(0.06);
-			text2->SetNDC();
-			text2->SetTextColor(1);
-			text2->Draw();
-			//....................................
-			cAmp[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1)->SetLogz();
-//			ampID->GetYaxis()->SetRangeUser(7500,9500); //LHC16i
-//			ampID->GetYaxis()->SetRangeUser(1400,1600); //LHC16i
-			ampID->GetYaxis()->SetRangeUser(4750,5050); //LHC16h
-			ampID->Draw("colz");
-			infoText=Form("Amplitudes - Run %i",RunId[i]);
-			TLatex* text3 = new TLatex(0.2,0.8,infoText);
-			text3->SetTextSize(0.06);
-			text3->SetNDC();
-			text3->SetTextColor(1);
-			text3->Draw();
+		TH1F *hCellFlag = (TH1F*)f->Get("fhCellFlag");
+		if(!hCellFlag) {
+			Printf("fhCellFlag not found");
+			continue;
+		}
+		ncells  = hCellFlag->GetNbinsX();
+		if(!hFlagvsRun[0]) {
+			Printf("Defining hFlagvsRun");
+			
+			Double_t mincell = hCellFlag->GetXaxis()->GetBinLowEdge(1);
+			Double_t maxcell = hCellFlag->GetXaxis()->GetBinLowEdge(ncells+1);
+			
+			hFlagvsRun[0] = new TH2F("hFlag1vsRun", "hFlag1vsRun (?); cell ID; Run number", ncells, mincell, maxcell, nRun-runNotFound, 0, nRun-runNotFound-1); // update this axis, need to have the run number
+			hFlagvsRun[1] = new TH2F("hFlag2vsRun", "hFlag2vsRun (?); cell ID; Run number", ncells, mincell, maxcell, nRun-runNotFound, 0, nRun-runNotFound-1);
+			hFlagvsRun[2] = new TH2F("hFlag3vsRun", "hFlag3vsRun (?); cell ID; Run number", ncells, mincell, maxcell, nRun-runNotFound, 0, nRun-runNotFound-1);
+			
+			
+			
+		}
+		for(Int_t ic = 0; ic < ncells; ic++){
+			Int_t flag = hCellFlag->GetBinContent(ic+1);
+			if(flag>0){
+				hFlagvsRun[flag-1]->Fill(ic, i, 1); //fill, use the x, y values
+			}
+			
+		}
+		
+		if(!hFlagNew[0]){
+			hFlagNew[0] = (TH2F*)goodCells->Clone(TString::Format("2DChannelMapNew_Flag0"));
+			hFlagNew[0]->Reset();
+			hFlagNew[1] = (TH2F*)deadCells->Clone(TString::Format("2DChannelMapNew_Flag1"));
+			hFlagNew[1]->Reset();
+			hFlagNew[2] = (TH2F*)badCells->Clone(TString::Format("2DChannelMapNew_Flag2"));
+			hFlagNew[2]->Reset();
+		}
+		
+		// Drawing
+		//....................................
+		cBad[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1);
+		badCells->Draw("colz");
+		infoText=Form("Bad Cells - Run %i",RunId[i]);
+		TLatex* text = new TLatex(0.2,0.8,infoText);
+		text->SetTextSize(0.06);
+		text->SetNDC();
+		text->SetTextColor(1);
+		text->Draw();
+		//....................................
+		cGood[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1);
+		goodCells->Draw("colz");
+		infoText=Form("Good Cells - Run %i",RunId[i]);
+		TLatex* text1 = new TLatex(0.2,0.8,infoText);
+		text1->SetTextSize(0.06);
+		text1->SetNDC();
+		text1->SetTextColor(1);
+		text1->Draw();
+		//....................................
+		cDead[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1);
+		deadCells->Draw("colz");
+		infoText=Form("Dead Cells - Run %i",RunId[i]);
+		TLatex* text2 = new TLatex(0.2,0.8,infoText);
+		text2->SetTextSize(0.06);
+		text2->SetNDC();
+		text2->SetTextColor(1);
+		text2->Draw();
+		//....................................
+		cAmp[i/totalperCv]->cd(i/totalperCv + i%totalperCv+1)->SetLogz();
+		//			ampID->GetYaxis()->SetRangeUser(7500,9500); //LHC16i
+		//			ampID->GetYaxis()->SetRangeUser(1400,1600); //LHC16i
+		ampID->GetYaxis()->SetRangeUser(4750,5050); //LHC16h
+		ampID->Draw("colz");
+		infoText=Form("Amplitudes - Run %i",RunId[i]);
+		TLatex* text3 = new TLatex(0.2,0.8,infoText);
+		text3->SetTextSize(0.06);
+		text3->SetNDC();
+		text3->SetTextColor(1);
+		text3->Draw();
 		
 	}
+	
+	cFlag->cd(1);
+	hFlagvsRun[0]->Draw("colz");
+	cFlag->cd(2);
+	hFlagvsRun[1]->Draw("colz");
+	cFlag->cd(3);
+	hFlagvsRun[2]->Draw("colz");
+	
+	// define cut for bad channel declaration
+	Double_t percbad = 0.9;
+	Int_t nFlags = 3;
+	Printf("Nbins = %d, %d, total = %d", hFlagvsRun[0]->GetNbinsX(), hFlagvsRun[0]->GetNbinsY(), hFlagvsRun[0]->GetBin(hFlagvsRun[0]->GetNbinsX(), hFlagvsRun[0]->GetNbinsY()));
+	for(Int_t iflag = 0; iflag < nFlags; iflag++){//
+		for(Int_t ic = 0; ic < ncells; ic++){//
+			TH1D *htmpCell = hFlagvsRun[iflag]->ProjectionY(TString::Format("hIDProj_cell%d", ic), ic+1, ic+1);
+			Double_t fracRun = 0, sumRun = 0;
+			if(htmpCell->Integral() > 0) Printf("Integral cell %d %f", ic,  htmpCell->Integral());
+			for(Int_t ir = 0; ir < nRun ; ir++){
+				sumRun += htmpCell->GetBinContent(ir);
+			}
+			fracRun = sumRun/(Double_t)(nRun-runNotFound);
+			if (fracRun>0) {
+				Printf("Frac = %f, %f", sumRun, fracRun);
+			
+			//continue;
+			//if(fracRun > percbad) {
+				Int_t cellColumn=0, cellRow=0;
+				Int_t cellColumnAbs=0, cellRowAbs=0;
+				Int_t trash = 0 ;
+				//fCaloUtils->SetRunNumber(RunId[ir]);
+				//fCaloUtils->AccessGeometry(aod);
+				fCaloUtils->GetModuleNumberCellIndexesAbsCaloMap(ic,0,cellColumn,cellRow,trash,cellColumnAbs,cellRowAbs);
+				Printf("Cell %d -> %d, %d     %d, %d", ic, cellColumn, cellRow, cellColumnAbs, cellRowAbs);
+				hFlagNew[iflag]->Fill(cellColumnAbs, cellRowAbs, fracRun);
+			}
+		}
+	}
+	cFlagNew->cd(1);
+	hFlagNew[0]->Draw("colz");
+	cFlagNew->cd(2);
+	hFlagNew[1]->Draw("colz");
+	cFlagNew->cd(3);
+	hFlagNew[2]->Draw("colz");
+	
 	gSystem->mkdir(TString::Format("%s/%s/", analysisOutput.Data(), train.Data()));
 	gSystem->mkdir(TString::Format("%s/%s/RunByRunSummary/", analysisOutput.Data(), train.Data()));
 	for(Int_t ic = 0; ic<nCv; ic++){
@@ -371,11 +487,15 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 		cDead[ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cDead[ic]->GetName()));
 		cAmp [ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cAmp [ic]->GetName()));
 	}
+	cFlag->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlag->GetName()));
+	cFlagNew->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlagNew->GetName()));
+	
+	
 }
 //________________________________________________________________________
 void CheckListDeadChannels(TString qaoutputPath = "/data/Work/EMCAL/BadChannels/LHC16h/510muon_caloLego/", TString runlist = "/data/Work/EMCAL/BadChannels/LHC16h/rulListLHC16h_EMCGood_Fieldp30.txt", TString listname = "CaloQA_AnyINT", TString hname = "EMCAL_hAmpId")
 {
-
+	
 	// current list of dead cells from Martin
 	const Int_t ndeadSM4 = 32;
 	Int_t listDeadSM4[ndeadSM4] = {4833, 4832, 4881, 4880, 4835, 4834, 4883, 4882, 4837, 4836, 4885, 4884, 4839, 4838, 4887, 4886, 4841, 4840, 4889, 4888, 4843, 4842, 4891, 4890, 4845, 4844, 4893, 4892, 4847, 4846, 4895, 4894};
