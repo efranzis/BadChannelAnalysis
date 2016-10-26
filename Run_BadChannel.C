@@ -288,23 +288,28 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 		cAmp [ic] ->Divide(nPad,nPad);
 	}
 	
-	
-	TH2F* hFlagvsRun[3]; 
-	hFlagvsRun[0] = 0x0;
-	hFlagvsRun[1] = 0x0;
-	hFlagvsRun[2] = 0x0;
-
-	TH2F* hFlagNew[3]; 
+	Int_t nFlags = 3;
+	TH2F* hFlagvsRun[nFlags]; 
+	TH2F* hFlagNew[nFlags]; 
 	hFlagNew[0] = 0x0;
 	hFlagNew[1] = 0x0;
 	hFlagNew[2] = 0x0;
-	
+	TH1F* hFlagPerID[nFlags];
+	// init
+	for(Int_t i = 0; i<nFlags; i++){
+		hFlagvsRun[i] = 0x0;
+		hFlagNew  [i] = 0x0;
+		hFlagPerID[i] = 0x0;
+	}
 	TCanvas *cFlag = new TCanvas("cFlag", "cFlag", 800, 800);
 	cFlag->Divide(2, 2);
 	
 	TCanvas *cFlagNew = new TCanvas("cFlagNew", "cFlag new", 800, 800);
 	cFlagNew->Divide(2, 2);
-
+	
+	TCanvas *cFlagNewID = new TCanvas("cFlagNewID", "cFlag new vs cell ID", 800, 800);
+	cFlagNewID->Divide(2, 2);
+	
 	AliCalorimeterUtils *fCaloUtils = new AliCalorimeterUtils();
 	//..Create a dummy event for the CaloUtils
 	AliAODEvent* aod = new AliAODEvent();
@@ -328,9 +333,6 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 			continue;
 		}
 		
-		//TH2F *badCells  = (TH2F*)f->Get("HitRowColumn_Flag2");
-		//TH2F *goodCells = (TH2F*)f->Get("HitRowColumn_Flag0");
-		//TH2F *deadCells = (TH2F*)f->Get("HitRowColumn_Flag1");
 		TH2F *badCells  = (TH2F*)f->Get("2DChannelMap_Flag2");
 		if(!badCells) {
 			Printf("2DChannelMap_Flag2 not found");
@@ -372,25 +374,41 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 			hFlagvsRun[0] = new TH2F("hFlag1vsRun", "hFlag1vsRun (?); cell ID; Run number", ncells, mincell, maxcell, nRun-runNotFound, 0, nRun-runNotFound-1); // update this axis, need to have the run number
 			hFlagvsRun[1] = new TH2F("hFlag2vsRun", "hFlag2vsRun (?); cell ID; Run number", ncells, mincell, maxcell, nRun-runNotFound, 0, nRun-runNotFound-1);
 			hFlagvsRun[2] = new TH2F("hFlag3vsRun", "hFlag3vsRun (?); cell ID; Run number", ncells, mincell, maxcell, nRun-runNotFound, 0, nRun-runNotFound-1);
-			
-			
+
 			
 		}
 		for(Int_t ic = 0; ic < ncells; ic++){
 			Int_t flag = hCellFlag->GetBinContent(ic+1);
-			if(flag>0){
-				hFlagvsRun[flag-1]->Fill(ic, i, 1); //fill, use the x, y values
-			}
 			
+			if(flag == 1) hFlagvsRun[0]->Fill(ic, i, 1);
+			if(flag>1){
+				hFlagvsRun[1]->Fill(ic, i, 1); //fill, use the x, y values
+			}
+			if(flag>0){
+				hFlagvsRun[2]->Fill(ic, i, 1);
+			}
 		}
 		
 		if(!hFlagNew[0]){
-			hFlagNew[0] = (TH2F*)goodCells->Clone(TString::Format("2DChannelMapNew_Flag0"));
+			hFlagNew[0] = (TH2F*)goodCells->Clone(TString::Format("2DChannelMapNew_Flag1"));
 			hFlagNew[0]->Reset();
-			hFlagNew[1] = (TH2F*)deadCells->Clone(TString::Format("2DChannelMapNew_Flag1"));
+			hFlagNew[0]->SetTitle("Selected flag 1; cell column (#eta direction); cell raw (#phi direction)");
+			hFlagNew[1] = (TH2F*)goodCells->Clone(TString::Format("2DChannelMapNew_Flagg1"));
 			hFlagNew[1]->Reset();
-			hFlagNew[2] = (TH2F*)badCells->Clone(TString::Format("2DChannelMapNew_Flag2"));
+			hFlagNew[1]->SetTitle("Selected flag greater than 1; cell column (#eta direction); cell raw (#phi direction)");
+			hFlagNew[2] = (TH2F*)goodCells->Clone(TString::Format("2DChannelMapNew_FlagAll"));
 			hFlagNew[2]->Reset();
+			hFlagNew[2]->SetTitle("Selected flag greater than 0; cell column (#eta direction); cell raw (#phi direction)");
+			
+			hFlagPerID[0] = (TH1F*)hCellFlag->Clone(TString::Format("FlagCellID_Flag1"));
+			hFlagPerID[0]->SetTitle("Selected flag 1; Abs. Cell ID; Fraction of Runs");
+			hFlagPerID[0]->Reset();
+			hFlagPerID[1] = (TH1F*)hCellFlag->Clone(TString::Format("FlagCellID_Flagg1"));
+			hFlagPerID[1]->SetTitle("Selected flag greater than 1; Abs. Cell ID; Fraction of Runs");
+			hFlagPerID[1]->Reset();
+			hFlagPerID[2] = (TH1F*)hCellFlag->Clone(TString::Format("FlagCellID_FlagAll"));
+			hFlagPerID[2]->SetTitle("Selected flag greater than 0; Abs. Cell ID; Fraction of Runs");
+			hFlagPerID[2]->Reset();
 		}
 		
 		// Drawing
@@ -443,32 +461,32 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 	cFlag->cd(3);
 	hFlagvsRun[2]->Draw("colz");
 	
-	// define cut for bad channel declaration
+	// define cut for bad channel declaration, not used for the moment
 	Double_t percbad = 0.9;
-	Int_t nFlags = 3;
+
 	Printf("Nbins = %d, %d, total = %d", hFlagvsRun[0]->GetNbinsX(), hFlagvsRun[0]->GetNbinsY(), hFlagvsRun[0]->GetBin(hFlagvsRun[0]->GetNbinsX(), hFlagvsRun[0]->GetNbinsY()));
 	for(Int_t iflag = 0; iflag < nFlags; iflag++){//
 		for(Int_t ic = 0; ic < ncells; ic++){//
 			TH1D *htmpCell = hFlagvsRun[iflag]->ProjectionY(TString::Format("hIDProj_cell%d", ic), ic+1, ic+1);
 			Double_t fracRun = 0, sumRun = 0;
-			if(htmpCell->Integral() > 0) Printf("Integral cell %d %f", ic,  htmpCell->Integral());
+			//if(htmpCell->Integral() > 0) Printf("Integral cell %d %f", ic,  htmpCell->Integral());
 			for(Int_t ir = 0; ir < nRun ; ir++){
 				sumRun += htmpCell->GetBinContent(ir);
 			}
 			fracRun = sumRun/(Double_t)(nRun-runNotFound);
+			//loose selection criteria to remove the runs with zero entries
 			if (fracRun>0) {
-				Printf("Frac = %f, %f", sumRun, fracRun);
+				//Printf("Frac = %f, %f", sumRun, fracRun);
 			
-			//continue;
 			//if(fracRun > percbad) {
 				Int_t cellColumn=0, cellRow=0;
 				Int_t cellColumnAbs=0, cellRowAbs=0;
 				Int_t trash = 0 ;
-				//fCaloUtils->SetRunNumber(RunId[ir]);
-				//fCaloUtils->AccessGeometry(aod);
 				fCaloUtils->GetModuleNumberCellIndexesAbsCaloMap(ic,0,cellColumn,cellRow,trash,cellColumnAbs,cellRowAbs);
-				Printf("Cell %d -> %d, %d     %d, %d", ic, cellColumn, cellRow, cellColumnAbs, cellRowAbs);
+				//Printf("Cell %d -> %d, %d     %d, %d", ic, cellColumn, cellRow, cellColumnAbs, cellRowAbs);
 				hFlagNew[iflag]->Fill(cellColumnAbs, cellRowAbs, fracRun);
+				
+				hFlagPerID[iflag]->SetBinContent(ic, fracRun);
 			}
 		}
 	}
@@ -478,6 +496,13 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 	hFlagNew[1]->Draw("colz");
 	cFlagNew->cd(3);
 	hFlagNew[2]->Draw("colz");
+	
+	cFlagNewID->cd(1);
+	hFlagPerID[0]->Draw();
+	cFlagNewID->cd(2);  
+	hFlagPerID[1]->Draw();
+	cFlagNewID->cd(3);  
+	hFlagPerID[2]->Draw();
 	
 	gSystem->mkdir(TString::Format("%s/%s/", analysisOutput.Data(), train.Data()));
 	gSystem->mkdir(TString::Format("%s/%s/RunByRunSummary/", analysisOutput.Data(), train.Data()));
@@ -489,7 +514,7 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 	}
 	cFlag->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlag->GetName()));
 	cFlagNew->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlagNew->GetName()));
-	
+	cFlagNewID->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlagNewID->GetName()));
 	
 }
 //________________________________________________________________________
