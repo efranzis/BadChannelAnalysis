@@ -30,6 +30,14 @@
 #include "AliAODEvent.h"               //include when compile
 #include "AliOADBContainer.h"          //include when compile
 
+//colors
+const Int_t colors[]     = {kBlack, kRed+1 , kBlue+1, kGreen+3, kMagenta+1, kOrange-1,kCyan+2,kYellow+2, kRed-9, kGreen-10, kBlue - 8};
+
+//definition of methods
+TH1D* GetAbsIDHistogram(Int_t celln, TFile *fin);
+TH1D** GetAllAbsIDHistogram(TFile *fin, Int_t& totbadCells);
+TList* GetListAbsIDHistograms(TFile *fin);
+TString RunSpecificHistogramFileName(Int_t runnumb, TString period, TString train = "Train_641", TString trigger= "AnyINTnoBC", TString workDir=".");
 
 //________________________________________________________________________
 void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 245683, TString externalFile= "",TString listName="runList.txt",TString workDir=".", Int_t nversion = 1)
@@ -272,10 +280,10 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 	Int_t nPad = TMath::Sqrt(totalperCv);
 	Int_t nCv = nRun/totalperCv;
 	
-	TCanvas *cBad [nCv];
-	TCanvas *cGood[nCv];
-	TCanvas *cDead[nCv];
-	TCanvas *cAmp [nCv];
+	TCanvas **cBad  = new TCanvas*[nCv];
+	TCanvas **cGood = new TCanvas*[nCv];
+	TCanvas **cDead = new TCanvas*[nCv];
+	TCanvas **cAmp  = new TCanvas*[nCv];
 	for(Int_t ic = 0; ic<nCv; ic++){
 		cBad [ic] = new TCanvas(TString::Format("badcells%d", ic), TString::Format("badcells  (%d/%d)", ic+1, nCv), 1000,750);
 		cGood[ic] = new TCanvas(TString::Format("goodcells%d", ic),TString::Format("goodcells (%d/%d)", ic+1, nCv),1000,750);
@@ -289,26 +297,29 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 	}
 	
 	Int_t nFlags = 3;
-	TH2F* hFlagvsRun[nFlags]; 
-	TH2F* hFlagNew[nFlags]; 
+	TH2F** hFlagvsRun = new TH2F*[nFlags]; 
+	TH2F** hFlagNew = new TH2F*[nFlags];
 	hFlagNew[0] = 0x0;
 	hFlagNew[1] = 0x0;
 	hFlagNew[2] = 0x0;
-	TH1F* hFlagPerID[nFlags];
+	TH1F** hFlagPerID = new TH1F*[nFlags];
+	
+	TCanvas **cFlag = new TCanvas*[nFlags];
+	TCanvas **cFlagNewID = new TCanvas*[nFlags];
 	// init
 	for(Int_t i = 0; i<nFlags; i++){
 		hFlagvsRun[i] = 0x0;
 		hFlagNew  [i] = 0x0;
 		hFlagPerID[i] = 0x0;
+		
+		cFlag[i] = new TCanvas(TString::Format("cFlag%d", i), TString::Format("cFlag %d ", i), 1200, 500);
+		
+		cFlagNewID[i] = new TCanvas(TString::Format("cFlagNewID%d", i), "cFlag new vs cell ID", 1200, 800);
 	}
-	TCanvas *cFlag = new TCanvas("cFlag", "cFlag", 800, 800);
-	cFlag->Divide(2, 2);
 	
 	TCanvas *cFlagNew = new TCanvas("cFlagNew", "cFlag new", 800, 800);
 	cFlagNew->Divide(2, 2);
 	
-	TCanvas *cFlagNewID = new TCanvas("cFlagNewID", "cFlag new vs cell ID", 800, 800);
-	cFlagNewID->Divide(2, 2);
 	
 	AliCalorimeterUtils *fCaloUtils = new AliCalorimeterUtils();
 	//..Create a dummy event for the CaloUtils
@@ -454,18 +465,21 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 		
 	}
 	
-	cFlag->cd(1);
-	hFlagvsRun[0]->Draw("colz");
-	cFlag->cd(2);
-	hFlagvsRun[1]->Draw("colz");
-	cFlag->cd(3);
-	hFlagvsRun[2]->Draw("colz");
+	
+	
+	//cFlag->cd(2);
+	//hFlagvsRun[1]->Draw("colz");
+	//cFlag->cd(3);
+	//hFlagvsRun[2]->Draw("colz");
 	
 	// define cut for bad channel declaration, not used for the moment
 	Double_t percbad = 0.9;
 
 	Printf("Nbins = %d, %d, total = %d", hFlagvsRun[0]->GetNbinsX(), hFlagvsRun[0]->GetNbinsY(), hFlagvsRun[0]->GetBin(hFlagvsRun[0]->GetNbinsX(), hFlagvsRun[0]->GetNbinsY()));
 	for(Int_t iflag = 0; iflag < nFlags; iflag++){//
+		Printf("%p", cFlag[iflag]);
+		cFlag[iflag]->cd();
+		hFlagvsRun[iflag]->Draw("colz");
 		for(Int_t ic = 0; ic < ncells; ic++){//
 			TH1D *htmpCell = hFlagvsRun[iflag]->ProjectionY(TString::Format("hIDProj_cell%d", ic), ic+1, ic+1);
 			Double_t fracRun = 0, sumRun = 0;
@@ -489,6 +503,8 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 				hFlagPerID[iflag]->SetBinContent(ic, fracRun);
 			}
 		}
+		cFlagNewID[iflag]->cd();
+		hFlagPerID[iflag]->Draw();
 	}
 	cFlagNew->cd(1);
 	hFlagNew[0]->Draw("colz");
@@ -497,12 +513,11 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 	cFlagNew->cd(3);
 	hFlagNew[2]->Draw("colz");
 	
-	cFlagNewID->cd(1);
-	hFlagPerID[0]->Draw();
-	cFlagNewID->cd(2);  
-	hFlagPerID[1]->Draw();
-	cFlagNewID->cd(3);  
-	hFlagPerID[2]->Draw();
+	
+	//cFlagNewID->cd(2);  
+	//hFlagPerID[1]->Draw();
+	//cFlagNewID->cd(3);  
+	//hFlagPerID[2]->Draw();
 	
 	gSystem->mkdir(TString::Format("%s/%s/", analysisOutput.Data(), train.Data()));
 	gSystem->mkdir(TString::Format("%s/%s/RunByRunSummary/", analysisOutput.Data(), train.Data()));
@@ -512,11 +527,202 @@ void SummarizeRunByRun(TString period = "LHC15o", TString train = "Train_641", T
 		cDead[ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cDead[ic]->GetName()));
 		cAmp [ic] ->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cAmp [ic]->GetName()));
 	}
-	cFlag->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlag->GetName()));
+	for(Int_t iflag = 0; iflag < nFlags; iflag++){
+		cFlag[iflag]->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlag[iflag]->GetName()));
+		cFlagNewID[iflag]->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlagNewID[iflag]->GetName()));
+	}
 	cFlagNew->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlagNew->GetName()));
-	cFlagNewID->SaveAs(TString::Format("%s/%s/RunByRunSummary/%s.pdf", analysisOutput.Data(), train.Data(), cFlagNewID->GetName()));
 	
 }
+
+//________________________________________________________________________
+
+void PlotSelectionAbsID(TString listName, TString period = "LHC15o", TString train = "Train_641", TString trigger= "AnyINTnoBC", TString workDir="."){
+	
+	
+	cout<<"o o o Open .txt file with run indices. Name = " << listName << endl;
+	TString analysisInput  = Form("AnalysisInput/%s",period.Data());
+	TString analysisOutput = Form("AnalysisOutput/%s",period.Data());
+	TString runList        = Form("%s/%s/%s/%s",workDir.Data(), analysisInput.Data(), train.Data(),listName.Data());
+
+	FILE *pFile = fopen(runList.Data(), "r");
+	if(!pFile)
+	{
+		cout<<"couldn't open file "<<runList<<"!"<<endl;
+		return;
+	}
+	Int_t q;
+	Int_t ncols;
+	Int_t nlines = 0 ;
+	Int_t RunId[500] ;
+	while (1)
+	{
+		ncols = fscanf(pFile,"  %d ",&q);
+		if (ncols< 0) break;
+		RunId[nlines]=q;
+		nlines++;
+	}
+	fclose(pFile);
+	
+	//..Initialize EMCal/DCal geometry
+	AliCalorimeterUtils* fCaloUtils = new AliCalorimeterUtils();
+	//..Create a dummy event for the CaloUtils
+	AliAODEvent* aod = new AliAODEvent();
+	
+	fCaloUtils->AccessGeometry(aod);
+	
+	
+	//prepare Canvas
+	Int_t bigNumb = 180, nPad = 9, ncvfilled = 0;
+	TCanvas **cAmpl = new TCanvas*[bigNumb];
+	for(Int_t i = 0; i< bigNumb; i++){
+		cAmpl[i]= new TCanvas(TString::Format("cbadcells%d", i), TString::Format("badcells, cv %d", i),1000,750);
+		cAmpl[i]->Divide(TMath::Sqrt(nPad),TMath::Sqrt(nPad));
+	}
+	std::map<Int_t, Int_t> mapChPadIdx;
+	Int_t counter = 0, nc = 0, np = 0;
+	for(Int_t ir = 0 ; ir < nlines; ir++){ //
+		Printf("--------------- Run %d", RunId[ir]);
+		TFile *fin = new TFile(RunSpecificHistogramFileName(RunId[ir], period, train, trigger, workDir));
+		if(!fin->IsOpen())continue;
+		// get the histograms
+		Int_t nh = 0;
+		TList *listAmp = GetListAbsIDHistograms(fin);
+		
+		fCaloUtils->SetRunNumber(RunId[ir]);
+		Int_t ncells = fCaloUtils->GetEMCALGeometry()->GetNCells();
+		
+		for(Int_t ic = 0; ic < ncells; ic++){ //
+			
+			TH1D* hTmpBad = (TH1D*)listAmp->FindObject(TString::Format("Cell %d", ic));
+			if(!hTmpBad) continue;
+			
+			if(mapChPadIdx.count(ic) == 0){ // if this map position was never initialized
+				mapChPadIdx[ic] = counter; //map to the position in the canvas where this cell is drawn
+				//Printf(" -> becomes %d", mapChPadIdx[ic]);
+				nc = counter/nPad;
+				np = counter%nPad;
+				//Printf("Setting ic %d in cv %d pad %d", ic, nc, np);
+				if(nc > bigNumb - 1) {
+					Printf("too few pads foreseen");
+					continue;
+				}
+						
+				counter++;
+				
+			} else {
+				// check the position where this cell is drawn
+				nc = mapChPadIdx[ic]/nPad;
+				np = mapChPadIdx[ic]%nPad;
+				
+				
+			}
+			//hTmpBad->SetLineColor(colors[ir]);
+			hTmpBad->SetLineWidth(2);
+			cAmpl[nc]->cd(np+1);
+			gPad->SetLogy();
+			hTmpBad->DrawClone("sames");
+			
+			//if(ic == 3778) Printf("Canvas %d, pad %d", mapChPadIdx[ic]/nPad, mapChPadIdx[ic]%nPad);
+			if(nc > ncvfilled) ncvfilled = nc;
+		} //loop on cells
+	
+	} //loop on runs
+	
+	//save to pdf file
+	TString filenameout = TString::Format("%s/%s/cAmplitudeSeveralRuns.pdf", workDir.Data(), analysisOutput.Data());
+		cAmpl[0]->Print(TString::Format("%s(", filenameout.Data()), "pdf");
+		for(Int_t inc = 1; inc < ncvfilled+1; inc++){
+			cAmpl[inc]->Print(TString::Format("%s", filenameout.Data()), "pdf");
+		}
+		//last page will be empty
+		cAmpl[ncvfilled+1]->Print(TString::Format("%s)", filenameout.Data()), "pdf");
+		
+		for(Int_t inc = ncvfilled; inc < bigNumb; inc++){
+			delete cAmpl[inc];
+		}
+	
+
+}
+
+//________________________________________________________________________
+
+TString RunSpecificHistogramFileName(Int_t runnumb, TString period, TString train, TString trigger, TString workDir){
+	
+	TString analysisOutput = Form("%s/AnalysisOutput/%s", workDir.Data(), period.Data());
+	
+	TString badChannelOutput  = TString::Format("%s/Version%i/%s%s_Histograms_V%i.root", analysisOutput.Data(), runnumb, train.Data(), trigger.Data(), runnumb);
+	
+	return badChannelOutput;
+}
+
+//________________________________________________________________________
+TH1D* GetAbsIDHistogram(Int_t celln, TFile *fin){
+	
+	TString listname = "BadCell_Amplitudes";
+	TList *listBad = (TList*)fin->Get(listname);
+	if(!listBad){
+		Printf("List %s not found, return 0x0", listname.Data());
+		fin->ls();
+		return 0x0;
+	}
+	
+	TH1D* hIDAmpl = (TH1D*)listBad->FindObject(TString::Format("Cell %d", celln));
+	if(!hIDAmpl){
+		Printf("Cell %d is not among the bad cells", celln);
+		return 0x0;
+	}
+	
+	return hIDAmpl;
+
+}
+
+//________________________________________________________________________
+TH1D** GetAllAbsIDHistogram(TFile *fin, Int_t& totbadCells){
+	
+	if(!fin->IsOpen()){
+		Printf("File not found, return 0x0");
+		return 0x0;
+	
+	}
+	TString listname = "BadCell_Amplitudes";
+	TList *listBad = (TList*)fin->Get(listname);
+	if(!listBad){
+		Printf("List %s not found, return 0x0", listname.Data());
+		fin->ls();
+		return 0x0;
+	}
+	//Printf("Debugging List found");
+	totbadCells = listBad->GetEntries();
+	TH1D** hIDAmpl = new TH1D*[totbadCells];
+	
+	for(Int_t i = 0; i < totbadCells; i++){
+		hIDAmpl[i] = (TH1D*)listBad->At(i);
+		//Printf("Pointer histo %d, %p", i, hIDAmpl[i]);
+	}
+	Printf("End, returning");
+	return hIDAmpl;
+
+}
+
+//________________________________________________________________________
+
+TList* GetListAbsIDHistograms(TFile *fin){
+	if(!fin->IsOpen()){
+		Printf("File not found, return 0x0");
+		return 0x0;
+	
+	}
+	TString listname = "BadCell_Amplitudes";
+	TList *listBad = (TList*)fin->Get(listname);
+	if(!listBad){
+		Printf("List %s not found, return 0x0", listname.Data());
+		fin->ls();
+		return 0x0;
+	}
+	return listBad;
+}
+
 //________________________________________________________________________
 void CheckListDeadChannels(TString qaoutputPath = "/data/Work/EMCAL/BadChannels/LHC16h/510muon_caloLego/", TString runlist = "/data/Work/EMCAL/BadChannels/LHC16h/rulListLHC16h_EMCGood_Fieldp30.txt", TString listname = "CaloQA_AnyINT", TString hname = "EMCAL_hAmpId")
 {
@@ -535,7 +741,7 @@ void CheckListDeadChannels(TString qaoutputPath = "/data/Work/EMCAL/BadChannels/
 		read>> currentRun;
 		Printf("Run %s", currentRun.Data());
 
-		TFile *fin = new TFile(Form("%s%s.root", qaoutputPath.Data(), currentRun.Data()));
+		TFile *fin = new TFile(TString::Format("%s%s.root", qaoutputPath.Data(), currentRun.Data()));
 
 		if(!fin->IsOpen()){
 			Printf("%s%s.root not found", qaoutputPath.Data(), currentRun.Data());
@@ -563,7 +769,7 @@ void CheckListDeadChannels(TString qaoutputPath = "/data/Work/EMCAL/BadChannels/
 		}
 
 		for(Int_t ideadsm4 = 0; ideadsm4 < ndeadSM4; ideadsm4++){
-			TH1D* hAmpForSpecificID = hAmpCellId->ProjectionX(Form("hAmpForSpecificID"), listDeadSM4[ideadsm4], listDeadSM4[ideadsm4]);
+			TH1D* hAmpForSpecificID = hAmpCellId->ProjectionX(TString::Format("hAmpForSpecificID"), listDeadSM4[ideadsm4], listDeadSM4[ideadsm4]);
 			Int_t entries = hAmpForSpecificID->GetEntries();
 			if(entries > 0) {
 				Printf("Error! %d entries found in Cell %d, run %s", entries, listDeadSM4[ideadsm4], currentRun.Data());
@@ -573,7 +779,7 @@ void CheckListDeadChannels(TString qaoutputPath = "/data/Work/EMCAL/BadChannels/
 		}
 
 		for(Int_t ideadsm7 = 0; ideadsm7 < ndeadSM7; ideadsm7++){
-			TH1D* hAmpForSpecificID = hAmpCellId->ProjectionX(Form("hAmpForSpecificID"), listDeadSM7[ideadsm7], listDeadSM7[ideadsm7]);
+			TH1D* hAmpForSpecificID = hAmpCellId->ProjectionX(TString::Format("hAmpForSpecificID"), listDeadSM7[ideadsm7], listDeadSM7[ideadsm7]);
 			Int_t entries = hAmpForSpecificID->GetEntries();
 			if(entries > 0) {
 				Printf("Error! %d entries found in Cell %d, run %s", entries, listDeadSM7[ideadsm7], currentRun.Data());
