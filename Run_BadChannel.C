@@ -60,7 +60,7 @@ void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TStr
 	//. . . . . . . . . . . . . . . . . . . . . . . .
 	//. . Add different period analyses
 	//. . . . . . . . . . . . . . . . . . . . . . . .
-	Analysis->AddPeriodAnalysis(2, 4.,0.1,0.3); // hit/event in range Emin Emax
+/*	Analysis->AddPeriodAnalysis(2, 4.,0.1,0.3); // hit/event in range Emin Emax
 	Analysis->AddPeriodAnalysis(1, 6.,0.1,0.3); // energy/hit in range Emin Emax
 	Analysis->AddPeriodAnalysis(2, 4.,0.2,0.5); // hit/event in range Emin Emax
 	Analysis->AddPeriodAnalysis(1, 6.,0.2,0.5); // energy/hit in range Emin Emax
@@ -68,16 +68,26 @@ void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TStr
 	Analysis->AddPeriodAnalysis(1, 6.,0.5,1.0); // energy/hit in range Emin Emax
 
 	//..If there is enough statistic add also these:
-	//Analysis->AddPeriodAnalysis(2, 4.,1.0,4.0); // hit/event in range Emin Emax
-	//Analysis->AddPeriodAnalysis(1, 6.,1.0,4.0); // mean energy in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.,1.0,6.0); // hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 6.,1.0,6.0); // mean energy in range Emin Emax
-//	Analysis->AddPeriodAnalysis(2, 4.,1.0,10.0);// hit/event in range Emin Emax
-//	Analysis->AddPeriodAnalysis(1, 5.,1.0,10.0);// energy/hit in range Emin Emax
-	//Analysis->AddPeriodAnalysis(2, 5.,3.0,10.0);// (PbPb extra range) hit/event in range Emin Emax
-	//Analysis->AddPeriodAnalysis(1, 5.,3.0,10.0);// (PbPb extra range) energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.,1.0,4.0); // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 6.,1.0,4.0); // mean energy in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.,1.0,10.0);// hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 5.,1.0,10.0);// energy/hit in range Emin Emax
+//	Analysis->AddPeriodAnalysis(2, 5.,3.0,10.0);// (PbPb extra range) hit/event in range Emin Emax
+//	Analysis->AddPeriodAnalysis(1, 5.,3.0,10.0);// (PbPb extra range) energy/hit in range Emin Emax
+*/
 
-///*test time stuff*/	Analysis->AddPeriodAnalysis(3, 6,-20,+20);// energy/hit in range Emin Emax
+	///*test time stuff*/	Analysis->AddPeriodAnalysis(3, 6,-20,+20);// energy/hit in range Emin Emax
+
+	Analysis->AddPeriodAnalysis(2, 5.,0.1,0.3); // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 5.,0.1,0.3); // energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.,0.2,0.5); // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 6.,0.2,0.5); // energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.,0.5,1.0); // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 6.,0.5,1.0); // energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.,1.0,4.0); // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 6.,1.0,4.0); // mean energy in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.,1.0,10.0);// hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 5.,1.0,10.0);// energy/hit in range Emin Emax
 
 
 	//..Start the bad channel analysis
@@ -144,7 +154,7 @@ void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t r
 	TString rootFileName= Form("Train_%dAnyINTnoBC_Histograms_V%d.root",trainNo,version);
 	TFile* outputRoot   = TFile::Open(Form("%s/%s",path.Data(),rootFileName.Data()));
 
-	TH2F* h2DChannelMap_FlagBad=(TH2F*)outputRoot->Get("2DChannelMap_Flag2");
+	TH2F* h2DChannelMap_FlagBad =(TH2F*)outputRoot->Get("2DChannelMap_Flag2");
 	TH2F* h2DChannelMap_FlagDead=(TH2F*)outputRoot->Get("2DChannelMap_Flag1");
 
 	/*cout<<"Open root file: "<<outputRoot->GetName()<<endl;
@@ -169,7 +179,7 @@ void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t r
 	Int_t fNMaxRowsAbs = Int_t (nSM/2)*fNMaxRows; //multiply by number of supermodules
 	TString histoName;
 	histoName = Form("2DChannelMap_Flag_Bad");
-	TH2F *plot2D_Bad_OADB = new TH2F(histoName,histoName,fNMaxColsAbs+1,-0.5,fNMaxColsAbs+0.5, fNMaxRowsAbs+1,-0.5,fNMaxRowsAbs+0.5);
+		TH2F *plot2D_Bad_OADB = new TH2F(histoName,histoName,fNMaxColsAbs+1,-0.5,fNMaxColsAbs+0.5, fNMaxRowsAbs+1,-0.5,fNMaxRowsAbs+0.5);
 ///*OADB  looks like Marcels figures*/	TH2F *plot2D_Bad_OADB = new TH2F(histoName,histoName,fNMaxColsAbs,0,fNMaxColsAbs, fNMaxRowsAbs,0,fNMaxRowsAbs);
 	plot2D_Bad_OADB->GetXaxis()->SetTitle("cell column (#eta direction)");
 	plot2D_Bad_OADB->GetYaxis()->SetTitle("cell row (#phi direction)");
@@ -203,6 +213,7 @@ void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t r
 				cellID=geom->GetAbsCellIdFromCellIndexes(iSM,inRow,inCol);
 				fCaloUtils->GetModuleNumberCellIndexesAbsCaloMap(cellID,0,inCol,inRow,trash,cellColumnAbs,cellRowAbs);
 				if(h[iSM]->GetBinContent(column,row)==2)
+				//if(h[iSM]->GetBinContent(column,row)>1)//..bad and warm
 				{
 					plot2D_Bad_OADB->SetBinContent(cellColumnAbs,cellRowAbs,1);
 				}
@@ -229,13 +240,25 @@ void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t r
 	C3->cd(2);
 	h2DChannelMap_FlagDead->DrawCopy("colz");
 	//..................................................................
-	TCanvas* C4 = new TCanvas("Division of OADB/Orig.","Division of OADB/Orig.",1);
+	TCanvas* C4 = new TCanvas("Subtraction of OADB-Orig.","Subtraction of OADB-Orig.",1);
 	C4->Divide(2);
 	C4->cd(1);
 	plot2D_Bad_OADB->Add(h2DChannelMap_FlagBad,-1);
 	plot2D_Bad_OADB->DrawCopy("colz");
+	plot2D_Bad_OADB->Add(h2DChannelMap_FlagBad,+1);
 	C4->cd(2);
 	plot2D_Dead_OADB->Add(h2DChannelMap_FlagDead,-1);
+	plot2D_Dead_OADB->DrawCopy("colz");
+	plot2D_Dead_OADB->Add(h2DChannelMap_FlagDead,+1);
+
+	//..................................................................
+	TCanvas* C5 = new TCanvas("Division of OADB/Orig.","Division of OADB/Orig.",1);
+	C5->Divide(2);
+	C5->cd(1);
+	plot2D_Bad_OADB->Divide(h2DChannelMap_FlagBad);
+	plot2D_Bad_OADB->DrawCopy("colz");
+	C5->cd(2);
+	plot2D_Dead_OADB->Divide(h2DChannelMap_FlagDead);
 	plot2D_Dead_OADB->DrawCopy("colz");
 }
 //________________________________________________________________________
