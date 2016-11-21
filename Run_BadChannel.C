@@ -40,7 +40,7 @@ TList* GetListAbsIDHistograms(TFile *fin);
 TString RunSpecificHistogramFileName(Int_t runnumb, TString period, TString train = "Train_641", TString trigger= "AnyINTnoBC", TString workDir=".");
 
 //________________________________________________________________________
-void Run_BadChannel(TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 245683, TString externalFile= "",TString listName="runList.txt",TString workDir=".", Int_t nversion = 1)
+void Run_BadChannel(Int_t nversion = 1, TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 245683, TString externalFile= "",TString listName="runList.txt",TString workDir=".")
 {
 	
 	TStopwatch watch;
