@@ -11,7 +11,7 @@
 // ---------------------
 // use root -b to speed up (no canvas drawn)
 // root [2] .L Run_BadChannel.C++
-// root [2] Run_BadChannel("LHC15n","Train_603","AnyINTnoBC",244411)
+// root [2] Run_BadChannel(1,"LHC15n","Train_603","AnyINTnoBC",244411)
 //  
 /////////////////////////////////////////////////
 
@@ -24,12 +24,12 @@
 #include <TList.h>
 #include <TSystem.h>
 #include <TStopwatch.h>
-#include "AliAnaCaloChannelAnalysis.h" //include when compile
+/*#include "AliAnaCaloChannelAnalysis.h" //include when compile
 #include "AliEMCALGeometry.h"          //include when compile
 #include "AliCalorimeterUtils.h"       //include when compile
 #include "AliAODEvent.h"               //include when compile
 #include "AliOADBContainer.h"          //include when compile
-
+*/
 //colors
 const Int_t colors[]     = {kBlack, kRed+1 , kBlue+1, kGreen+3, kMagenta+1, kOrange-1,kCyan+2,kYellow+2, kRed-9, kGreen-10, kBlue - 8};
 
@@ -42,7 +42,6 @@ TString RunSpecificHistogramFileName(Int_t runnumb, TString period, TString trai
 //________________________________________________________________________
 void Run_BadChannel(Int_t nversion = 1, TString period = "LHC15n", TString train = "Train_603", TString trigger= "AnyINTnoBC", Int_t runNum= 245683, TString externalFile= "",TString listName="runList.txt",TString workDir=".")
 {
-	
 	TStopwatch watch;
 	watch.Start();
 	
@@ -78,16 +77,18 @@ void Run_BadChannel(Int_t nversion = 1, TString period = "LHC15n", TString train
 
 	///*test time stuff*/	Analysis->AddPeriodAnalysis(3, 6,-20,+20);// energy/hit in range Emin Emax
 
-	Analysis->AddPeriodAnalysis(2, 5.,0.1,0.3); // hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 5.,0.1,0.3); // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.,0.2,0.5); // hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 6.,0.2,0.5); // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.,0.5,1.0); // hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 6.,0.5,1.0); // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.,1.0,4.0); // hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 6.,1.0,4.0); // mean energy in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.,1.0,10.0);// hit/event in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 5.,1.0,10.0);// energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 5.5,0.1,0.3);  // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 4.5,0.1,0.3);  // energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 5.5,0.2,0.5);  // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 4.5,0.2,0.5);  // energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.0,0.5,1.0);  // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 4.5,0.5,1.0);  // energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.0,1.0,4.0);  // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 4.5,1.0,4.0);  // mean energy in range Emin Emax
+	Analysis->AddPeriodAnalysis(2, 4.0,1.0,10.0); // hit/event in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 4.5,1.0,10.0); // energy/hit in range Emin Emax
+//	Analysis->AddPeriodAnalysis(2, 5.,3.0,10.0);// (PbPb extra range) hit/event in range Emin Emax
+//	Analysis->AddPeriodAnalysis(1, 5.,3.0,10.0);// (PbPb extra range) energy/hit in range Emin Emax
 
 
 	//..Start the bad channel analysis
