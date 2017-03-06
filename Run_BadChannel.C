@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////
 //
-// This macro has been developed to find badcell candidates in EMCal and DCal based on cell amplitude distributions
+// This macro has been developed to find bad cell candidates in EMCal and DCal based on cell amplitude distributions
 // Input needed can be either outputs QA from AliAnaCalorimeterQA task (BadChannelAnalysis() function)
 // Or from merged output of AliAnalysisTaskCaloCellsQA (use BCAnalysis() function)
 //
@@ -24,12 +24,13 @@
 #include <TList.h>
 #include <TSystem.h>
 #include <TStopwatch.h>
-/*#include "AliAnaCaloChannelAnalysis.h" //include when compile
+
+#include "AliAnaCaloChannelAnalysis.h" //include when compile
 #include "AliEMCALGeometry.h"          //include when compile
 #include "AliCalorimeterUtils.h"       //include when compile
 #include "AliAODEvent.h"               //include when compile
 #include "AliOADBContainer.h"          //include when compile
-*/
+
 //colors
 const Int_t colors[]     = {kBlack, kRed+1 , kBlue+1, kGreen+3, kMagenta+1, kOrange-1,kCyan+2,kYellow+2, kRed-9, kGreen-10, kBlue - 8};
 
@@ -47,10 +48,10 @@ void Run_BadChannel(Int_t nversion = 1, TString period = "LHC15n", TString train
 	
 	AliAnaCaloChannelAnalysis* Analysis;
 	//..If you do the analysis run by run - this might be helpful
-	//Analysis=new AliAnaCaloChannelAnalysis(period,train,trigger,runNum,runNum,workDir,listName);
+	Analysis=new AliAnaCaloChannelAnalysis(period,train,trigger,runNum,runNum,workDir,listName);
 
 	//..If you do it with merged files use this
-	Analysis=new AliAnaCaloChannelAnalysis(period,train,trigger,runNum,nversion,workDir,listName);
+	//Analysis=new AliAnaCaloChannelAnalysis(period,train,trigger,runNum,nversion,workDir,listName);
 
 	//..Settings
 	Analysis->SetExternalMergedFile(externalFile);
@@ -97,6 +98,9 @@ void Run_BadChannel(Int_t nversion = 1, TString period = "LHC15n", TString train
 	watch.Stop();
 	watch.Print();
 }
+//
+//check where the bad cell is (row collumn), if you have only its ID
+//
 //________________________________________________________________________
 void Get_RowCollumnID(Int_t runNum= 244411,Int_t inputCellID=-1,Int_t inputRow=-1,Int_t inputCollumn=-1,Int_t inputSM=-1)
 {
@@ -133,6 +137,8 @@ void Get_RowCollumnID(Int_t runNum= 244411,Int_t inputCellID=-1,Int_t inputRow=-
 	cout<<""<<endl;
 	cout<<"...................................................."<<endl;
 }
+//
+// Test if the file committed to OADB is correct
 //________________________________________________________________________
 void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t runNumber=244411)
 {
@@ -666,7 +672,6 @@ void PlotSelectionAbsID(TString listName, TString period = "LHC15o", TString tra
 			delete cAmpl[inc];
 		}
 	
-
 }
 
 //________________________________________________________________________
@@ -746,73 +751,3 @@ TList* GetListAbsIDHistograms(TFile *fin){
 	}
 	return listBad;
 }
-
-//________________________________________________________________________
-void CheckListDeadChannels(TString qaoutputPath = "/data/Work/EMCAL/BadChannels/LHC16h/510muon_caloLego/", TString runlist = "/data/Work/EMCAL/BadChannels/LHC16h/rulListLHC16h_EMCGood_Fieldp30.txt", TString listname = "CaloQA_AnyINT", TString hname = "EMCAL_hAmpId")
-{
-	
-	// current list of dead cells from Martin
-	const Int_t ndeadSM4 = 32;
-	Int_t listDeadSM4[ndeadSM4] = {4833, 4832, 4881, 4880, 4835, 4834, 4883, 4882, 4837, 4836, 4885, 4884, 4839, 4838, 4887, 4886, 4841, 4840, 4889, 4888, 4843, 4842, 4891, 4890, 4845, 4844, 4893, 4892, 4847, 4846, 4895, 4894};
-
-	const Int_t ndeadSM7 = 32;
-	Int_t listDeadSM7[ndeadSM7] = {8481, 8480, 8529, 8528, 8483, 8482, 8531, 8530, 8485, 8484, 8533, 8532, 8487, 8486, 8535, 8534, 8489, 8488, 8537, 8536, 8491, 8490, 8539, 8538, 8493, 8492, 8541, 8540, 8495, 8494, 8543, 8542};
-
-	ifstream read(runlist.Data());
-	Int_t nruns = 0;
-	TString currentRun = "";
-	while(read){
-		read>> currentRun;
-		Printf("Run %s", currentRun.Data());
-
-		TFile *fin = new TFile(TString::Format("%s%s.root", qaoutputPath.Data(), currentRun.Data()));
-
-		if(!fin->IsOpen()){
-			Printf("%s%s.root not found", qaoutputPath.Data(), currentRun.Data());
-			continue;
-		}
-
-		TDirectoryFile *dir = (TDirectoryFile*)fin->Get(listname);
-		if(!dir){
-			Printf("%s not found", listname.Data());
-			fin->ls();
-			continue;
-		}
-
-		TList *list = (TList*)dir->Get(listname);
-		if(!list){
-			Printf("%s not found", listname.Data());
-			dir->ls();
-			continue;
-		}
-
-		TH2D *hAmpCellId = (TH2D*)list->FindObject(hname);
-		if(!hAmpCellId){
-			Printf("hAmpCellId not found");
-			continue;
-		}
-
-		for(Int_t ideadsm4 = 0; ideadsm4 < ndeadSM4; ideadsm4++){
-			TH1D* hAmpForSpecificID = hAmpCellId->ProjectionX(TString::Format("hAmpForSpecificID"), listDeadSM4[ideadsm4], listDeadSM4[ideadsm4]);
-			Int_t entries = hAmpForSpecificID->GetEntries();
-			if(entries > 0) {
-				Printf("Error! %d entries found in Cell %d, run %s", entries, listDeadSM4[ideadsm4], currentRun.Data());
-			}
-
-			delete hAmpForSpecificID;
-		}
-
-		for(Int_t ideadsm7 = 0; ideadsm7 < ndeadSM7; ideadsm7++){
-			TH1D* hAmpForSpecificID = hAmpCellId->ProjectionX(TString::Format("hAmpForSpecificID"), listDeadSM7[ideadsm7], listDeadSM7[ideadsm7]);
-			Int_t entries = hAmpForSpecificID->GetEntries();
-			if(entries > 0) {
-				Printf("Error! %d entries found in Cell %d, run %s", entries, listDeadSM7[ideadsm7], currentRun.Data());
-			}
-			delete hAmpForSpecificID;
-		}
-
-		nruns++;
-
-	}
-}
-
