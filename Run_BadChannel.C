@@ -72,15 +72,34 @@ void Run_BadChannel(Int_t nversion = -1, TString period = "LHC15n", TString trai
 	gROOT->ProcessLine("gErrorIgnoreLevel = kWarning;"); //..to supress a lot of standard output
     std::vector<Int_t> badcellsManual;
 
+    //..LHC16l
+/*    badcellsManual.insert(badcellsManual.end(),{7120,7121,7122,7123,7124,7125,7126,7127,7128,7129,7130,7131,7132,7133,7134,7135});
+    badcellsManual.insert(badcellsManual.end(),{7168,7169,7170,7171,7172,7173,7174,7175,7176,7177,7178,7180,7181,7182,7183});
+    badcellsManual.insert(badcellsManual.end(),{7537,7872,7873,7874,7875,7876,7877,7878,7879,7880,7881,7882,7883,7884,7885,7886,7887});
+    badcellsManual.insert(badcellsManual.end(),{7920,7921,7922,7923,7924,7925,7926,7927,7928,7929,7930,7931,7932,7933,7934,7935});
+    badcellsManual.insert(badcellsManual.end(),{7968,7969,7970,7971,7972,7973,7974,7975,7976,7977,7978,7979,7980,7981,7982,7983});
+    badcellsManual.insert(badcellsManual.end(),{8016,8017,8018,8019,8020,8021,8022,8023,8024,8025,8026,8027,8028,8029,8030,8031});
+    badcellsManual.insert(badcellsManual.end(),{8656,8657,8658,8659,8660,8661,8662,8663,8664,8665,8666,8667,8668,8669,8670,8671});
+    badcellsManual.insert(badcellsManual.end(),{8704,8705,8706,8707,8708,8709,8710,8711,8712,8713,8714,8715,8716,8717,8718,8719});
+    badcellsManual.insert(badcellsManual.end(),{8753,8754,8755,8756,8757,8758,8759,8760,8761,8762,8763,8764,8765,8766,8767});
+    badcellsManual.insert(badcellsManual.end(),{8800,8801,8802,8803,8804,8805,8806,8807,8808,8809,8810,8811,8812,8813,8814,8815});
+    badcellsManual.insert(badcellsManual.end(),{10134,10811,11630,11904,11905,11906,11907,11908,11909,11910,11911,11912,11913,11914,11915,11916,11917,11918,11919});
+    badcellsManual.insert(badcellsManual.end(),{12032,12033,12034,12035,12036,12037,12038,12039,12040,12041,12042,12043,12044,12045,12046,12047});
+    badcellsManual.insert(badcellsManual.end(),{12170,12172,12622,12870,12876,13973,14264,14265,14266,14267,14320,14400,14553,14621,14722,14980});
+	badcellsManual.insert(badcellsManual.end(),{15298,15476,16477,16503,16505});
+*/
+    //..15o block 1
     //badcellsManual.insert(badcellsManual.end(),{14655,14622,14640,14728,14726,14593,14599,14600,14645,14646,14759,14776});
 /*
+ * //..15o block 2
     badcellsManual.insert(badcellsManual.end(),{6644,6655,10140,12036,12037,12038,12039,12040,12041,12926,13067,13066,13125});
     badcellsManual.insert(badcellsManual.end(),{13133,13483,13971,13978,14116,14118,14122,14411,14593,14599,14600,14606,14699});
 	badcellsManual.insert(badcellsManual.end(),{14728,15158,15462,16309});
-*/
+*/  //..15o block 3
 	/*badcellsManual.insert(badcellsManual.end(),{292,294,297,301,13483, 13975, 14116, 14320, 14326,14593,14597,14621,14657,14671,14705});
 	badcellsManual.insert(badcellsManual.end(),{14707,14716,14717,14728,14740,14748,14752,14759});
 	 */
+    //..15o block 4
 	/*badcellsManual.insert(badcellsManual.end(),{3472,3473,3474,3475,3476,3477,3478,3479,3480,3481,3482,3483,3484,3485,3486,3487});
 	badcellsManual.insert(badcellsManual.end(),{3520,3521,3522,3523,3524,3525,3526,3527,3528,3529,3530,3531,3532,3533,3534,3535});
 	badcellsManual.insert(badcellsManual.end(),{3665,3666,3667,3668,3669,3670,3671,3672,3673,3674,3675,3676,3677,3678,3679});
@@ -91,15 +110,12 @@ void Run_BadChannel(Int_t nversion = -1, TString period = "LHC15n", TString trai
 	badcellsManual.insert(badcellsManual.end(),{12034,12035,12036,12037,12038,12039,12040,12041,12042,12043,12044,12045,13469,13483,16427,16430});
 */
 
-
 	//..If nversion=-1
 	//..this is detected as a run-by-run analysis
 	if(nversion == -1)nversion=runNum; //..If you do the analysis run by run - this might be helpful
 
 	TStopwatch watch;
 	watch.Start();
-	//gErrorIgnoreLevel= 5000; //=1  =kWarning  //kInfo
-	gROOT->ProcessLine("gErrorIgnoreLevel = kWarning;"); //Does not work -
 
 	AliAnaCaloChannelAnalysis* Analysis;
 	Analysis=new AliAnaCaloChannelAnalysis(period,train,trigger,runNum,nversion,workDir,listName);
@@ -108,8 +124,8 @@ void Run_BadChannel(Int_t nversion = -1, TString period = "LHC15n", TString trai
 	Analysis->SetExternalMergedFile(externalFile);
     Analysis->AddManualMasking(badcellsManual);
     //Analysis->SetStartEndCell(0,12288);     //..only EMCal
-    Analysis->SetStartEndCell(12288,17664 );//..only DCal
-    //Analysis->SetQAChecks(1);  //1=Perform QA checks - takes a long time! Prints all good cells for cross check
+    //Analysis->SetStartEndCell(12288,17664);//..only DCal
+    //Analysis->SetQAChecks(1);     //1= Perform QA checks - takes a long time! Prints all good cells for cross check
 	//Analysis->SetPrintOutput(1);  //1= prints more information about excluded cells
 
 	//. . . . . . . . . . . . . . . . . . . . . . . .
@@ -117,36 +133,6 @@ void Run_BadChannel(Int_t nversion = -1, TString period = "LHC15n", TString trai
 	//. . . . . . . . . . . . . . . . . . . . . . . .
 	//..the range of sigmas should be selected such
 	//..that one does not cut into the natural fluctuation over the modules
-/*This is version 1
-    Analysis->AddPeriodAnalysis(2, 5.5,0.1,0.3);  // hits in cell in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.0,0.1,0.3);  // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 5.5,0.2,0.5);  // hits in cell range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.5,0.2,0.5);  // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.0,0.5,1.0);  // hits in cell range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.5,0.5,1.0);  // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.5,1.0,4.0);  // hits in cell range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.5,1.0,4.0);  // mean energy in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 4.5,1.0,10.0); // hits in cell in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.5,1.0,10.0); // energy/hit in range Emin Emax
-
-	//..special test for extra high energy fluctuations
-	Analysis->AddPeriodAnalysis(2, 5.5,3.0,40.0); // hits in cell in range Emin Emax
-*/
-/*This is version 3
- * 	Analysis->AddPeriodAnalysis(2, 5.5,0.1,0.3);  // hits in cell in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.0,0.1,0.3);  // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 5.5,0.2,0.5);  // hits in cell range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.5,0.2,0.5);  // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 5.0,0.5,1.0);  // hits in cell range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.5,0.5,1.0);  // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 5.0,1.0,4.0);  // hits in cell range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.5,1.0,4.0);  // mean energy in range Emin Emax
-	Analysis->AddPeriodAnalysis(2, 5.0,1.0,10.0); // hits in cell in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.5,1.0,10.0); // energy/hit in range Emin Emax
-
-	//..special test for extra high energy fluctuations
-	Analysis->AddPeriodAnalysis(2, 5.0,3.0,40.0); // hits in cell in range Emin Emax
-*/
 	Analysis->AddPeriodAnalysis(2, 5.5,0.1,0.3);  // hits in cell in range Emin Emax
 	Analysis->AddPeriodAnalysis(1, 4.0,0.1,0.3);  // energy/hit in range Emin Emax
 	Analysis->AddPeriodAnalysis(2, 5.5,0.2,0.5);  // hits in cell range Emin Emax
@@ -159,14 +145,17 @@ void Run_BadChannel(Int_t nversion = -1, TString period = "LHC15n", TString trai
 	//Analysis->AddPeriodAnalysis(1, 4.5,1.0,2.0);  //neu* mean energy in range Emin Emax
 	Analysis->AddPeriodAnalysis(2, 5.5,1.0,4.0);  // hits in cell range Emin Emax
 	Analysis->AddPeriodAnalysis(1, 4.5,1.0,4.0);  // mean energy in range Emin Emax
-// /*special for block*/	Analysis->AddPeriodAnalysis(2, 5.5,3.0,4.0);  // hits in cell range Emin Emax
-// /*special for block*/	Analysis->AddPeriodAnalysis(1, 4.5,3.0,4.0);  // mean energy in range Emin Emax
 	Analysis->AddPeriodAnalysis(2, 5.5,1.0,10.0); // hits in cell in range Emin Emax
-//standard	Analysis->AddPeriodAnalysis(1, 4.5,1.0,10.0); // energy/hit in range Emin Emax
-	Analysis->AddPeriodAnalysis(1, 4.5,1.0,2.0); // energy/hit in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 4.5,1.0,10.0); // energy/hit in range Emin Emax
+
 
 	//..special test for extra high energy fluctuations
-	Analysis->AddPeriodAnalysis(2, 4.5,3.0,40.0); // hits in cell in range Emin Emax
+	Analysis->AddPeriodAnalysis(1, 4.0,3.0,40.0); // energy/hit in cell in range Emin Emax
+//	Analysis->AddPeriodAnalysis(2, 4.0,3.0,40.0); // hits in cell range Emin Emax
+	//Analysis->AddPeriodAnalysis(1, 4.5,3.0,5.0);  // mean energy in range Emin Emax - cliff
+	//Analysis->AddPeriodAnalysis(2, 5.5,3.0,5.0);  // hits in cell range Emin Emax   - cliff
+	//Analysis->AddPeriodAnalysis(1, 4.5,5,20);     // energy/hit in range Emin Emax
+	//Analysis->AddPeriodAnalysis(2, 5.5,5,20);     // hits in range Emin Emax
 
 
 	///*test time stuff*/	Analysis->AddPeriodAnalysis(3, 6,-20,+20);// energy/hit in range Emin Emax
@@ -224,7 +213,7 @@ void Get_RowCollumnID(Int_t runNum= 244411,Int_t inputCellID=-1,Int_t inputRow=-
 // the bad map looks at a certain runNumber. If everything is committed
 // correctly they should show the same
 //________________________________________________________________________
-void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t runNumber=244411)
+void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,TString runList="")
 {
     gStyle->SetOptStat(0); //..Do not plot stat boxes
 	//......................................................
@@ -233,27 +222,52 @@ void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t r
 	Int_t nSM = 20;
 	TH1C *h[20];
 	Int_t cellColumnAbs,cellRowAbs,trash,cellID;
+	TString summaryPDF=Form("./AnalysisOutput/%s/Train_%i/OADB_Summary.pdf",period.Data(),trainNo);
 
 	//......................................................
+	//..open the text file and save the run IDs into the RunId[] array
+	cout<<"o o o Open .txt file with run indices. Name = " << runList << endl;
+	TString RunPath        = Form("/Users/Eliane/Software/BadChannelAnalysis/AnalysisInput/%s/Train_%i/%s",period.Data(),trainNo,runList.Data());
+	cout<<"o o o Open .txt file with run indices = " << RunPath << endl;
+	FILE *pFile = fopen(RunPath.Data(), "r");
+	if(!pFile)
+	{
+		cout<<"couldn't open file "<<RunPath<<"!"<<endl;
+		return;
+	}
+	Int_t q;
+	Int_t ncols;
+	Int_t nlines = 0 ;
+	Int_t RunId[500] ;
+	std::vector<Int_t> RunIdVec;
+	while (1)
+	{
+		ncols = fscanf(pFile,"  %d ",&q);
+		if (ncols< 0) break;
+		RunId[nlines]=q;
+		RunIdVec.push_back(q);
+		nlines++;
+	}
+	fclose(pFile);
+	//..sort the vector by size to be shure to use the right order
+	std::sort (RunIdVec.begin(), RunIdVec.end());
+    Int_t nRuns=RunIdVec.size();
+	//......................................................
 	//..Get the OADB information
-	//TString fBasePath="/Users/Eliane/Software/alice/sw/osx_x86-64/AliPhysics/0-1/OADB/EMCAL";
-	TString fBasePath="/Users/Eliane/Software/alice/sw/osx_x86-64/AliPhysics/latest-ali-master/OADB/EMCAL";
-	//TString fBasePath="/Users/Eliane/Software/BadChannelAnalysis";
+	//TString fBasePath="/Users/Eliane/Software/alice/sw/osx_x86-64/AliPhysics/latest-ali-master/OADB/EMCAL";
+	TString fBasePath="/Users/Eliane/Software/BadChannelAnalysis";
 
 	AliOADBContainer *cont=new AliOADBContainer("");
 	cont->InitFromFile(Form("%s/EMCALBadChannels.root",fBasePath.Data()),"AliEMCALBadChannels");
 	//......................................................
 	//..Get the .root file with the original histogram to compare if they coincide
-//	TString path        = Form("/Users/Eliane/Software/BadChannelAnalysis/AnalysisOutput/%s/Train_%i/Version%d",period.Data(),trainNo);
-	TString path        = Form("/Users/Eliane/Software/BadChannelAnalysis/AnalysisOutput/%s/Train_%i/VersionINT7Glob",period.Data(),trainNo);
-//	TString path        = Form("/Users/Eliane/Software/BadChannelAnalysis/AnalysisOutput/%s/Train_%i/VersionINT7Emc",period.Data(),trainNo);
-//	TString rootFileName= Form("Train_%dAnyINTnoBC_Histograms_V%d.root",trainNo,version);
-	TString rootFileName= Form("INT7_Histograms_V265630.root");
-//	TString rootFileName= Form("INT7_Histograms_V265309.root");
+	//TString path        = Form("/Users/Eliane/Software/BadChannelAnalysis/AnalysisOutput/%s/Train_%i/VersionINT7Glob",period.Data(),trainNo);
+	//TString path        = Form("/Users/Eliane/Software/BadChannelAnalysis/AnalysisOutput/%s/Train_%i/Version4ManMasked",period.Data(),trainNo);
+	TString path        = Form("/Users/Eliane/Software/BadChannelAnalysis/AnalysisOutput/%s/Train_%i/Version%i",period.Data(),trainNo,version);
+	TString rootFileName= Form("%s_INT7_Histograms_V%i.root",period.Data(),version);
 	TFile* outputRoot   = TFile::Open(Form("%s/%s",path.Data(),rootFileName.Data()));
 
 	if(!outputRoot)cout<<"File "<<outputRoot->GetName()<<" does not exist"<<endl;
-
 	TH2F* h2DChannelMap_FlagBad =(TH2F*)outputRoot->Get("2DChannelMap_Flag2");
 	TH2F* h2DChannelMap_FlagDead=(TH2F*)outputRoot->Get("2DChannelMap_Flag1");
 
@@ -262,7 +276,7 @@ void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t r
 	AliCalorimeterUtils* fCaloUtils = new AliCalorimeterUtils();
 	//..Create a dummy event for the CaloUtils
 	AliAODEvent* aod = new AliAODEvent();
-	fCaloUtils->SetRunNumber(runNumber);
+	fCaloUtils->SetRunNumber(RunIdVec.at(0));
 	fCaloUtils->AccessGeometry(aod);
 	AliEMCALGeometry * geom = fCaloUtils->GetEMCALGeometry();
 
@@ -288,87 +302,276 @@ void Test_OADB(TString period="LHC15n",Int_t trainNo=603,Int_t version=5,Int_t r
 
 	//.......................................................
 	//.. Read the Bad Channel map from OADB
-	TObjArray *recal=(TObjArray*)cont->GetObject(runNumber);
-	if(!recal)cout<<"Error - No bad map for run Number "<<runNumber<<" online!!"<<endl;
-
-	TCanvas* C1 = new TCanvas();
-	C1->cd();
-
-	for(Int_t iSM = 0; iSM < nSM; iSM++)
-	{
-
-		//.. Bad map fore each module
-		h[iSM]=(TH1C *)recal->FindObject(Form("EMCALBadChannelMap_Mod%d",iSM));
-		//h[iSM]->GetXaxis()->SetTitle("Column"); // tmp debug
-		//h[iSM]->GetYaxis()->SetTitle("Row"); // tmp debug
-		//h[iSM]->DrawCopy("colz"); // tmp debug
-
-		//..Loop though the SM to set which cells are bad
-		for(Int_t column=0;column<48;column++)
-		{
-			for(Int_t row=0;row<24;row++)
-			{
-				Int_t inRow=row;
-				Int_t inCol=column;
-				cellID=geom->GetAbsCellIdFromCellIndexes(iSM,inRow,inCol);
-				fCaloUtils->GetModuleNumberCellIndexesAbsCaloMap(cellID,0,inCol,inRow,trash,cellColumnAbs,cellRowAbs);
-				//if(h[iSM]->GetBinContent(column,row)==2)//..only bad
-				if(h[iSM]->GetBinContent(column,row)>1)//..bad and warm
-				{
-					plot2D_Bad_OADB->SetBinContent(cellColumnAbs,cellRowAbs,1);
-				}
-				if(h[iSM]->GetBinContent(column,row)==1)
-				{
-					plot2D_Dead_OADB->SetBinContent(cellColumnAbs,cellRowAbs,1);
-				}
-			}
-		}
-	}
-
-	//..................................................................
 	TCanvas* C2 = new TCanvas("CompareCanvas","Compare OADB to LocalFile",900,900);
 	C2->Divide(2,2);
-	C2->cd(1);
-	plot2D_Bad_OADB->SetTitle("Bad Cells OADB");
-	plot2D_Bad_OADB->DrawCopy("colz");
-	C2->cd(2);
-	plot2D_Dead_OADB->SetTitle("Dead Cells OADB");
-	plot2D_Dead_OADB->DrawCopy("colz");
-	C2->cd(3);
-	h2DChannelMap_FlagBad->SetTitle("Bad Cells LocalFile");
-	h2DChannelMap_FlagBad->DrawCopy("colz");
-	C2->cd(4);
-	h2DChannelMap_FlagDead->SetTitle("Dead Cells LocalFile");
-	h2DChannelMap_FlagDead->DrawCopy("colz");
-
-	//..................................................................
+	TCanvas* C4 = new TCanvas("Subtraction of OADB-Orig.","Subtraction of OADB-Orig.",900,900);
+	C4->Divide(2,2);
 	TLatex* textA = new TLatex(0.5,0.8,"If empty -> good!");
 	textA->SetTextSize(0.04);
 	textA->SetTextColor(1);
 	textA->SetNDC();
 
-	TCanvas* C4 = new TCanvas("Subtraction of OADB-Orig.","Subtraction of OADB-Orig.",900,900);
-	C4->Divide(2,2);
-	C4->cd(1);
-	plot2D_Bad_OADB->SetTitle("OADB-Local File (Bad)");
-	plot2D_Bad_OADB->Add(h2DChannelMap_FlagBad,-1);
-	plot2D_Bad_OADB->DrawCopy("colz");
-	plot2D_Bad_OADB->Add(h2DChannelMap_FlagBad,+1);
-	textA->Draw();
-	C4->cd(2);
-	plot2D_Dead_OADB->SetTitle("OADB-Local File (Dead)");
-	plot2D_Dead_OADB->Add(h2DChannelMap_FlagDead,-1);
-	plot2D_Dead_OADB->DrawCopy("colz");
-	plot2D_Dead_OADB->Add(h2DChannelMap_FlagDead,+1);
-	textA->Draw();
-	C4->cd(3);
-	plot2D_Bad_OADB->SetTitle("OADB/Local File (Bad)");
-	plot2D_Bad_OADB->Divide(h2DChannelMap_FlagBad);
-	plot2D_Bad_OADB->DrawCopy("colz");
-	C4->cd(4);
-	plot2D_Dead_OADB->SetTitle("OADB/Local File (Dead)");
-	plot2D_Dead_OADB->Divide(h2DChannelMap_FlagDead);
-	plot2D_Dead_OADB->DrawCopy("colz");
+	cout<<"Checking "<<nRuns<<" runs: "<<endl;
+	for(Int_t iRun = 0; iRun < nRuns; iRun++)
+	{
+		//cout<<"------ run "<<RunIdVec.at(iRun)<<endl;
+		if(iRun%5==0)cout<<"."<<flush;
+		if(iRun%20==0)cout<<"Run No."<<iRun<<endl;
+		TObjArray *recal=(TObjArray*)cont->GetObject(RunIdVec.at(iRun));
+		if(!recal)cout<<"Error - No bad map for run Number "<<RunIdVec.at(iRun)<<" online!!"<<endl;
+
+		plot2D_Bad_OADB ->Reset();
+		plot2D_Dead_OADB->Reset();
+		for(Int_t iSM = 0; iSM < nSM; iSM++)
+		{
+			//..Bad map fore each module
+			h[iSM]=(TH1C *)recal->FindObject(Form("EMCALBadChannelMap_Mod%d",iSM));
+			//..Loop though the SM to set which cells are bad
+			for(Int_t column=0;column<48;column++)
+			{
+				for(Int_t row=0;row<24;row++)
+				{
+					Int_t inRow=row;
+					Int_t inCol=column;
+					cellID=geom->GetAbsCellIdFromCellIndexes(iSM,inRow,inCol);
+					fCaloUtils->GetModuleNumberCellIndexesAbsCaloMap(cellID,0,inCol,inRow,trash,cellColumnAbs,cellRowAbs);
+					if(h[iSM]->GetBinContent(column,row)>1)//..bad and warm
+					{
+						plot2D_Bad_OADB->SetBinContent(cellColumnAbs,cellRowAbs,1);
+					}
+					if(h[iSM]->GetBinContent(column,row)==1)//..dead
+					{
+						plot2D_Dead_OADB->SetBinContent(cellColumnAbs,cellRowAbs,1);
+					}
+				}
+			}
+		}
+		//..................................................................
+		TLatex* text=new TLatex(0.15,0.85,Form("Run Number %i",RunIdVec.at(iRun)));
+		text->SetTextSize(0.05);
+		text->SetNDC();
+		text->SetTextColor(1);
+		text->SetTextAngle(0);
+
+		C2->cd(1);
+		plot2D_Bad_OADB->SetTitle("Bad Cells OADB");
+		plot2D_Bad_OADB->DrawCopy("colz");
+		text->Draw();
+		C2->cd(2);
+		plot2D_Dead_OADB->SetTitle("Dead Cells OADB");
+		plot2D_Dead_OADB->DrawCopy("colz");
+		C2->cd(3);
+		h2DChannelMap_FlagBad->SetTitle("Bad Cells LocalFile");
+		h2DChannelMap_FlagBad->DrawCopy("colz");
+		C2->cd(4);
+		h2DChannelMap_FlagDead->SetTitle("Dead Cells LocalFile");
+		h2DChannelMap_FlagDead->DrawCopy("colz");
+
+		//..................................................................
+		C4->cd(1);
+		plot2D_Bad_OADB->SetTitle("OADB-Local File (Bad)");
+		plot2D_Bad_OADB->Add(h2DChannelMap_FlagBad,-1);
+		plot2D_Bad_OADB->DrawCopy("colz");
+		plot2D_Bad_OADB->Add(h2DChannelMap_FlagBad,+1);
+		textA->Draw();
+		text->Draw();
+		C4->cd(2);
+		plot2D_Dead_OADB->SetTitle("OADB-Local File (Dead)");
+		plot2D_Dead_OADB->Add(h2DChannelMap_FlagDead,-1);
+		plot2D_Dead_OADB->DrawCopy("colz");
+		plot2D_Dead_OADB->Add(h2DChannelMap_FlagDead,+1);
+		textA->Draw();
+		C4->cd(3);
+		plot2D_Bad_OADB->SetTitle("OADB/Local File (Bad)");
+		plot2D_Bad_OADB->Divide(h2DChannelMap_FlagBad);
+		plot2D_Bad_OADB->DrawCopy("colz");
+		C4->cd(4);
+		plot2D_Dead_OADB->SetTitle("OADB/Local File (Dead)");
+		plot2D_Dead_OADB->Divide(h2DChannelMap_FlagDead);
+		plot2D_Dead_OADB->DrawCopy("colz");
+
+		//..................................................................
+        //..Save to PDF
+		//..Add figures to the summary canvas
+		if(iRun==0)C2   ->Print(Form("%s(",summaryPDF.Data()));
+		else       C2   ->Print(Form("%s(",summaryPDF.Data()));
+		if(iRun==nRuns-1)C4   ->Print(Form("%s)",summaryPDF.Data()));
+		else             C4   ->Print(Form("%s",summaryPDF.Data()));
+	}//end of run loop
+}
+//
+// Compares masked amplidudes from 2 different merged blocks
+// or from 2 different versions of the same block so that one can test
+// the effectivness of added periods
+//
+//________________________________________________________________________
+void Compare2Blocks(TString period="LHC15n",Int_t trainNo=603,Int_t versionA=0, Int_t versionB=1)
+{
+	gROOT->ProcessLine("gErrorIgnoreLevel = kWarning;"); //..to supress a lot of standard output
+	gStyle->SetOptStat(0); //..Do not plot stat boxes
+    gStyle->SetPadLeftMargin(0.13);
+    gStyle->SetPadRightMargin(0.1);
+    gStyle->SetPadBottomMargin(0.13);
+    gStyle->SetPadTopMargin(0.02);
+
+    Int_t noOfCells=17674; //
+    const Int_t nRunsUsed=105;
+    //const Int_t nRunsUsed=10;
+    Int_t nBadCellMerged =noOfCells;
+    Int_t nBadCellRbR    =noOfCells;
+
+    //..............................................
+    //..manually disable cells
+    std::vector<Int_t> badcellsBlock1;
+
+    //badcellsBlock1.insert(badcellsBlock1.end(),{6644,6655,10140,12036,12037,12038,12039,12040,12041,12926,13067,13066,13125});
+    //badcellsBlock1.insert(badcellsBlock1.end(),{13133,13483,13971,13978,14116,14118,14122,14411,14593,14599,14600,14606,14699});
+
+    std::vector<Int_t> vOnlyMaskedInMergedA;
+	std::vector<Int_t> vOnlyMaskedInMergedB;
+
+	//......................................................
+	//..Get the .root file from analyzing runs as 1 block together
+	//......................................................
+	cout<<"** Open file A with merged runlist analysis: "<<endl;
+	TString pathA        = Form("/Users/Eliane/Software/BadChannelAnalysis/AnalysisOutput/%s/Train_%i/Version%i",period.Data(),trainNo,versionA);
+	TString rootFileNameA= Form("INT7tCut_Histograms_V%i.root",versionA);
+	TFile* outputRootA   = TFile::Open(Form("%s/%s",pathA.Data(),rootFileNameA.Data()));
+	if(!outputRootA)cout<<"File "<<outputRootA->GetName()<<" does not exist"<<endl;
+	else cout<<"file A: "<<outputRootA->GetName()<<endl;
+
+	//..get the necessary histograms
+	TH2F* hCellAmplitudeA    =(TH2F*)outputRootA->Get("hCellAmplitude");
+	TH1F* hnEventsA          =(TH1F*)outputRootA->Get("hNEvents");
+	hCellAmplitudeA->Scale(hnEventsA->GetBinContent(1));
+	TH2F* hCellAmplitudeBlockMaskA=(TH2F*)hCellAmplitudeA->Clone("hCellAmplitudeMask");
+	TH1F* hCellFlagA         =(TH1F*)outputRootA->Get("fhCellFlag");
+
+	//......................................................
+	//..Get the .root file with run-by-run bad channel mask
+	//......................................................
+	cout<<endl;
+	cout<<"**Open file B with merged runlist analysis: "<<endl;
+	TString pathB        = Form("/Users/Eliane/Software/BadChannelAnalysis/AnalysisOutput/%s/Train_%i/Version%i",period.Data(),trainNo,versionB);
+	TString rootFileNameB= Form("INT7tCut_Histograms_V%i.root",versionB);
+	TFile* outputRootB   = TFile::Open(Form("%s/%s",pathB.Data(),rootFileNameB.Data()));
+	if(!outputRootB)cout<<"File "<<outputRootB->GetName()<<" does not exist"<<endl;
+	else cout<<"file B: "<<outputRootB->GetName()<<endl;
+
+	//..get the necessary histograms
+	TH2F* hCellAmplitudeB    =(TH2F*)outputRootB->Get("hCellAmplitude");
+	TH1F* hnEventsB          =(TH1F*)outputRootB->Get("hNEvents");
+	hCellAmplitudeB->Scale(hnEventsB->GetBinContent(1));
+	TH2F* hCellAmplitudeBlockMaskB=(TH2F*)hCellAmplitudeB->Clone("hCellAmplitudeMask");
+	TH1F* hCellFlagB         =(TH1F*)outputRootB->Get("fhCellFlag");
+
+	//......................................................
+	//..mask the bad cells according to both versions
+	//......................................................
+	Int_t maskA=0;
+	Int_t maskB=0;
+
+	for(Int_t ic = 0; ic < noOfCells; ic++)
+	{
+		//......................................................
+		//..Part A - analyzed as one merged runblock
+		//......................................................
+		maskA=0;
+		maskA=IsCellMaskedByHand(ic,badcellsBlock1);
+
+		//..mask the bad cells
+		for (Int_t amp = 1; amp <= hCellAmplitudeBlockMaskA->GetNbinsX(); amp++)
+		{
+			if(hCellFlagA->GetBinContent(ic+1)>0 || maskA==1)
+			{
+				hCellAmplitudeBlockMaskA->SetBinContent(amp,ic+1,0);
+				if(amp==1)nBadCellMerged--;
+			}
+		}
+
+		//......................................................
+		//..Part B - analyzed run-by-run, corrected and masked in block
+		//......................................................
+		maskB=0;
+		maskB=IsCellMaskedByHand(ic,badcellsBlock1);
+
+		//..mask the bad cells
+		for (Int_t amp = 1; amp <= hCellAmplitudeBlockMaskB->GetNbinsX(); amp++)
+		{
+			if(hCellFlagB->GetBinContent(ic+1)>0 || maskB==1)
+			{
+				hCellAmplitudeBlockMaskB->SetBinContent(amp,ic+1,0);
+				if(amp==1)nBadCellRbR--;
+			}
+		}
+
+		//......................................................
+		//..Compare the different channels that are marked in the two versions
+		//......................................................
+		if(!IsCellMaskedByHand(ic,badcellsBlock1))
+		{
+			if(hCellFlagA->GetBinContent(ic+1)>0  && hCellFlagB->GetBinContent(ic+1)==0)vOnlyMaskedInMergedA.push_back(ic);
+			if(hCellFlagA->GetBinContent(ic+1)==0 && hCellFlagB->GetBinContent(ic+1)>0) vOnlyMaskedInMergedB.push_back(ic);
+		}
+	}
+	//..merged runblock
+	TH1* projMaskedCellsA = hCellAmplitudeBlockMaskA->ProjectionX("MaskedCellsMergedBlockA");
+	TH1* projMaskedCellsB = hCellAmplitudeBlockMaskB->ProjectionX("MaskedCellsMergedBlockB");
+
+	//......................................................
+	//..Plot results
+	//......................................................
+	TCanvas* C1 = new TCanvas("-1-","Projections of A and B",900,900);
+	C1->Divide(2,2);
+	C1->cd(1)->SetLogy();
+  	SetHisto(projMaskedCellsA,"","hits/event",0);
+	projMaskedCellsA->DrawCopy("hist");
+	projMaskedCellsB->SetLineColor(8);
+	projMaskedCellsB->DrawCopy("same hist");
+	C1->cd(2);
+	projMaskedCellsA->Divide(projMaskedCellsB);
+  	SetHisto(projMaskedCellsA,"","Merged Version A/Merged Version B",0);
+	projMaskedCellsA->DrawCopy("hist");
+	projMaskedCellsA->Multiply(projMaskedCellsB);
+
+	TCanvas* C3 = new TCanvas("-3-","2D of A and B",900,900);
+	C3->Divide(2,2);
+	C3->cd(1)->SetLogz();
+  	SetHisto(hCellAmplitudeBlockMaskA,"","cell ID",0);
+  	hCellAmplitudeBlockMaskA->DrawCopy("colz");
+	C3->cd(2)->SetLogz();
+  	SetHisto(hCellAmplitudeBlockMaskB,"","cell ID",0);
+  	hCellAmplitudeBlockMaskB->DrawCopy("colz");
+
+
+ 	//......................................................
+	//..Print out compared cells and plot the spectra
+	//......................................................
+	projMaskedCellsA->Scale(1.0/nBadCellMerged);
+	projMaskedCellsB->Scale(1.0/nBadCellRbR);
+
+
+	cout<<"  Cells masked in version A and not in version B ("<<vOnlyMaskedInMergedA.size()<<"):"<<endl;
+	for(Int_t i=0; i<(Int_t)vOnlyMaskedInMergedA.size();i++)
+	{
+		cout<<vOnlyMaskedInMergedA.at(i)<<","<<flush;
+	}
+	cout<<endl;
+	CreateCellCompPDF(hCellAmplitudeBlockMaskB,vOnlyMaskedInMergedA,projMaskedCellsA,projMaskedCellsB,"./cOnlyMergedBlockA.pdf");
+	cout<<"  Cells masked in version B and not in version A ("<<vOnlyMaskedInMergedB.size()<<"):"<<endl;
+	for(Int_t i=0; i<(Int_t)vOnlyMaskedInMergedB.size();i++)
+	{
+		cout<<vOnlyMaskedInMergedB.at(i)<<","<<flush;
+	}
+	cout<<endl;
+	CreateCellCompPDF(hCellAmplitudeBlockMaskA,vOnlyMaskedInMergedB,projMaskedCellsA,projMaskedCellsB,"./cOnlyMergedBlockB.pdf");
+
+ 	//......................................................
+	//..build two dimensional histogram with cells rejected from
+	//..the one or the other method
+	//......................................................
+	Plot2DCells("A",244917,vOnlyMaskedInMergedB,vOnlyMaskedInMergedA);
+//	Plot2DCells("B",244917,vOnlyMaskedInRunbRunB,vOnlyMaskedInMergedB);
 }
 //
 // Compares masked amplidudes from t
